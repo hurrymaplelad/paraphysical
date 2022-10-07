@@ -85,16 +85,24 @@ export function parseStatementTokens(
 ): Statement {
   const first = tokens.peek(0);
   const second = tokens.peek(1);
-  switch (first?.type) {
-    case "name":
-      switch (second?.type) {
-        case "(":
-          return parseCall(tokens, context);
-        case "=":
-          return parseAssignment(tokens, context);
-      }
+  const statement = (() => {
+    switch (first?.type) {
+      case "name":
+        switch (second?.type) {
+          case "(":
+            return parseCall(tokens, context);
+          case "=":
+            return parseAssignment(tokens, context);
+        }
+    }
+    throw unexpectedTokenError({ actual: first }, context);
+  })();
+
+  const trailing = tokens.next().value;
+  if (trailing != null) {
+    throw unexpectedTokenError({ actual: trailing }, context);
   }
-  throw unexpectedTokenError({ actual: first }, context);
+  return statement;
 }
 
 //

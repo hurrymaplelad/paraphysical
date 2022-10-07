@@ -7,6 +7,17 @@ export type LineContext = Readonly<{
 }>;
 
 export function printToken(token: Token | null): string {
+  switch (token?.type) {
+    case "name":
+      return `"${token.name}"`;
+    case "number":
+      return token.number.toString();
+    case "(":
+    case ")":
+    case "=":
+    case ",":
+      return token.type;
+  }
   return JSON.stringify(token);
 }
 

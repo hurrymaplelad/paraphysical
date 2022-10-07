@@ -31,4 +31,9 @@ Deno.test("parseLine()", async (t) => {
     statement = parseLine("00001 foo = 1", context);
     assert(statement.type === "assignment");
   });
+
+  await t.step("invalid statements", () => {
+    // Trailing characters
+    expect(() => parseLine("00001 foo = 1 a", context)).toThrow(/Parse Error/);
+  });
 });
