@@ -1,13 +1,18 @@
 import { LineContext, makeParseError } from "./errors.ts";
 
 type Token = Readonly<
-  {
+  | {
     type: "number";
     number: number;
-  } | {
+  }
+  | {
     type: "name";
     name: string;
   }
+  | { type: ")" }
+  | { type: "(" }
+  | { type: "," }
+  | { type: "=" }
 >;
 
 const tokenizers: ReadonlyArray<
@@ -16,6 +21,12 @@ const tokenizers: ReadonlyArray<
     tokenize: (match: RegExpExecArray) => Token;
   }>
 > = [
+  {
+    regex: /[(),=]/y,
+    tokenize: (match) => ({
+      type: (match[0] as "(" | ")" | "," | "="),
+    }),
+  },
   {
     regex: /[1-9][0-9]*(\.[0-9]+)?/y,
     tokenize: (match) => ({
@@ -49,9 +60,7 @@ export function tokenizeLine(
   outer:
   while (index < line.length) {
     whitespaceRegex.lastIndex = index;
-    console.log("SPACE?", `'${line}'`, index);
     if (whitespaceRegex.exec(line) != null) {
-      console.log("SPACE");
       index = whitespaceRegex.lastIndex;
       continue;
     }

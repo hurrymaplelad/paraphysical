@@ -38,4 +38,24 @@ Deno.test("tokenizeLine()", async (t) => {
       name: "$boop.-5 A",
     }]);
   });
+
+  await t.step("Parens", () => {
+    const tokens = tokenizeLine("A( (B),))", context);
+    expect(tokens).toEqual([
+      {
+        type: "name",
+        name: "A",
+      },
+      { type: "(" },
+      { type: "(" },
+      {
+        type: "name",
+        name: "B",
+      },
+      { type: ")" },
+      { type: "," },
+      { type: ")" },
+      { type: ")" },
+    ]);
+  });
 });
