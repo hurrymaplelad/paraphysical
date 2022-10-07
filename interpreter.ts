@@ -7,10 +7,16 @@ type Statement = Readonly<
     filename: string;
   }
   & (
-    {
+    | {
       type: "comment";
       comment: string;
-    } | {
+    }
+    | {
+      type: "call";
+      functionName: string;
+      args: ReadonlyArray<string>;
+    }
+    | {
       type: "assignment";
     }
   )
@@ -32,16 +38,26 @@ function parseLine(
   context: Readonly<{ filename: string; sourceLineNumber: number }>,
 ): Statement {
   // Line label
-  const match = /^([0-9]{5})\s+(.*)$/.exec(line);
-  if (match == null) {
+  const labelMatch = /^([0-9]{5})\s+(.*)$/.exec(line);
+  if (labelMatch == null) {
     throw makeParseError("Line must start with 5 digit label", context);
   }
-  const [_, labelString, rest] = match;
+  const [_, labelString, rest] = labelMatch;
   const label = parseInt(labelString, 10);
 
+  // Comment
   if (rest.startsWith("C")) {
     return { type: "comment", comment: rest, label, ...context };
   }
+
+  // Call
+  const callMatch = /^(\w+)\((.*)\)\w*$/.exec(rest);
+  if (callMatch) {
+    const [_, functionName, argString] = callMatch;
+    const args = argString.split(",").map((a) => a.trim());
+    return { type: "call", functionName, args, label, ...context };
+  }
+
   throw makeParseError("Unrecognized statement", context);
 }
 
