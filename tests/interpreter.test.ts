@@ -8,13 +8,13 @@ async function readExampleText(filename: string): Promise<string> {
 Deno.test("Interpreter", async (t) => {
   const interpreter = new Interpreter();
 
-  await t.step("evaluate a simple file", async () => {
-    const filename = "hello.ppcl";
-    interpreter.load(filename, await readExampleText(filename));
-    interpreter.run(filename);
+  //   await t.step("evaluate a simple file", async () => {
+  //     const filename = "hello.ppcl";
+  //     interpreter.load(filename, await readExampleText(filename));
+  //     interpreter.run(filename);
 
-    expect(interpreter.getLocal("out")).toEqual(1);
-  });
+  //     expect(interpreter.getLocal("out")).toEqual(1);
+  //   });
 
   await t.step("throw parsing an invalid file", async () => {
     const filename = "invalid-line-number.ppcl";
