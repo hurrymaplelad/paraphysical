@@ -1,9 +1,9 @@
-import { LineContext, makeParseError } from "./errors.ts";
+import { LineContext, parsingError } from "./errors.ts";
 
 const SYMBOLS = ["(", ")", ",", "="] as const;
 type SymbolsType = typeof SYMBOLS[number];
 
-type Token = Readonly<
+export type Token = Readonly<
   | {
     type: "number";
     number: number;
@@ -73,7 +73,7 @@ export function tokenizeLine(
         continue outer;
       }
     }
-    throw makeParseError(`Invalid token: '${line[index]}'`, context);
+    throw parsingError(`Invalid token: '${line[index]}'`, context);
   }
   return tokens;
 }
