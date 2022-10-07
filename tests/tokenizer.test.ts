@@ -23,11 +23,19 @@ Deno.test("tokenizeLine()", async (t) => {
 
   await t.step("Names", () => {
     let tokens;
+
     // Simple
     tokens = tokenizeLine("boop ", context);
     expect(tokens).toEqual([{
       type: "name",
       name: "boop",
+    }]);
+
+    // Quoted
+    tokens = tokenizeLine('"$boop.-5 A"', context);
+    expect(tokens).toEqual([{
+      type: "name",
+      name: "$boop.-5 A",
     }]);
   });
 });

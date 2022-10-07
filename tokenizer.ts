@@ -24,10 +24,17 @@ const tokenizers: ReadonlyArray<
     }),
   },
   {
-    regex: /[A-Za-z]+/y,
+    regex: /[A-Za-z][A-Za-z0-9]*/y,
     tokenize: (match) => ({
       type: "name",
       name: match[0],
+    }),
+  },
+  {
+    regex: /"([A-Za-z0-9:$ .,_'-]+)"/y,
+    tokenize: (match) => ({
+      type: "name",
+      name: match[1],
     }),
   },
 ];
