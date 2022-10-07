@@ -54,7 +54,7 @@ const whitespaceRegex = /\s+/y;
 export function tokenizeLine(
   line: string,
   context: LineContext,
-): ReadonlyArray<Token> {
+): readonly Token[] {
   const tokens: Array<Token> = [];
   let index = 0;
   outer:

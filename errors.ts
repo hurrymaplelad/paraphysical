@@ -21,12 +21,25 @@ export function printToken(token: Token | null): string {
   return JSON.stringify(token);
 }
 
+export function errorAddress(
+  { filename, sourceLineNumber }: LineContext,
+): string {
+  return `[${filename}:${sourceLineNumber}]`;
+}
+
+export function runtimeError(
+  message: string,
+  context: LineContext,
+): Error {
+  return new Error(`Runtime Error: ${message} ${errorAddress(context)}`);
+}
+
 export function parsingError(
   message: string,
-  { filename, sourceLineNumber }: LineContext,
+  context: LineContext,
 ): Error {
   return new Error(
-    `Parse Error: ${message} [${filename}:${sourceLineNumber}]`,
+    `Parse Error: ${message} ${errorAddress(context)}`,
   );
 }
 

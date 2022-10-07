@@ -19,7 +19,7 @@ export type Statement = Readonly<
     | {
       type: "call";
       functionName: string;
-      args: ReadonlyArray<Expression>;
+      args: readonly Expression[];
     }
     | {
       type: "assignment";
@@ -29,21 +29,33 @@ export type Statement = Readonly<
   )
 >;
 
+// Union refinement: https://engineering.widen.com/blog/Demystifying-TypeScripts-Extract-Type/
+export type RefinedStatement<Type extends Statement["type"]> = Extract<
+  Statement,
+  Record<"type", Type>
+>;
+
 //
 // Text Parsers
 ///
 
-export type ParsedFile = Map<number, Statement>;
+export type ParsedFile = Readonly<{
+  statements: Map<number, Statement>;
+  maxLabel: number;
+}>;
+
 export function parseFile(
   contents: string,
   context: Readonly<{ filename: string }>,
 ): ParsedFile {
-  const parsed = new Map();
+  const statements = new Map();
+  let maxLabel = 0;
   for (const [i, line] of contents.split("\n").entries()) {
     const statement = parseLine(line, { ...context, sourceLineNumber: i + 1 });
-    parsed.set(statement.label, statement);
+    statements.set(statement.label, statement);
+    maxLabel = Math.max(maxLabel, statement.label);
   }
-  return parsed;
+  return { statements, maxLabel };
 }
 
 export function parseLine(
@@ -126,7 +138,7 @@ export function parseCall(
   return { type: "call", functionName: functionName.name, args, ...context };
 }
 
-type Expression = Readonly<
+export type Expression = Readonly<
   | {
     type: "reference";
     identifier: string;
