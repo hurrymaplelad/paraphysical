@@ -23,7 +23,7 @@ export type Statement = Readonly<
     }
     | {
       type: "assignment";
-      lhs: Expression;
+      lhs: RefinedExpression<"reference">;
       rhs: Expression;
     }
   )
@@ -138,17 +138,6 @@ export function parseCall(
   return { type: "call", functionName: functionName.name, args, ...context };
 }
 
-export type Expression = Readonly<
-  | {
-    type: "reference";
-    identifier: string;
-  }
-  | {
-    type: "literal";
-    token: RefinedToken<"number">;
-  }
->;
-
 export function parseAssignment(
   tokens: Tokens,
   context: StatementContext,
@@ -167,6 +156,23 @@ export function parseAssignment(
 //
 // Expression Parsers
 //
+
+export type Expression = Readonly<
+  | {
+    type: "reference";
+    identifier: string;
+  }
+  | {
+    type: "literal";
+    token: RefinedToken<"number">;
+  }
+>;
+
+// Union refinement: https://engineering.widen.com/blog/Demystifying-TypeScripts-Extract-Type/
+export type RefinedExpression<Type extends Expression["type"]> = Extract<
+  Expression,
+  Record<"type", Type>
+>;
 
 export function parseExpression(
   tokens: Tokens,
@@ -202,12 +208,35 @@ export function parseLiteral(
 export function parseReference(
   tokens: Tokens,
   context: StatementContext,
-): Expression {
+): RefinedExpression<"reference"> {
   const nameToken = consumeExpected(tokens, "name", context);
   return {
     type: "reference",
     identifier: nameToken.name,
   };
+}
+
+export type ReferenceIdentifier = Readonly<
+  | {
+    type: "local";
+    keyOrName: string;
+  }
+  | {
+    type: "point";
+  }
+>;
+
+export function parseReferenceIdentifier(
+  identifier: string,
+  context: LineContext,
+): ReferenceIdentifier {
+  if (identifier.startsWith("$")) {
+    return {
+      type: "local",
+      keyOrName: identifier.slice(1),
+    };
+  }
+  throw parsingError(`invalid reference: ${identifier}`, context);
 }
 
 //

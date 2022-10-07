@@ -1,4 +1,4 @@
 00400	C --- Declare locals ---
 00410	LOCAL("OUT")
 01000	C === Main Control Loop ===
-01010	C "$OUT" = 1
+01010	"$OUT" = 1

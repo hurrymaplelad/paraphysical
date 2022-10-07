@@ -3,6 +3,7 @@ import {
   Expression,
   ParsedFile,
   parseFile,
+  parseReferenceIdentifier,
   RefinedStatement,
 } from "./parser.ts";
 
@@ -30,15 +31,33 @@ export class Interpreter {
       throw new Error(`Cannot run "${filename}" - not loaded.`);
     }
     this.#currentFilename = filename;
-    while (programCounter < file.maxLabel) {
+    while (programCounter <= file.maxLabel) {
       const statement = file.statements.get(programCounter);
+      // if (statement != null) {
+      //   console.log("evaluating", statement.label, statement.type);
+      // }
       switch (statement?.type) {
         case "call":
           this.evaluateCall(statement);
           break;
+        case "assignment":
+          this.evaluateAssignment(statement);
       }
       programCounter += 1;
     }
+  }
+
+  evaluateAssignment(
+    statement: RefinedStatement<"assignment">,
+  ): void {
+    const { lhs, rhs } = statement;
+    const value = this.evaluateExpression(rhs, statement);
+    const dest = parseReferenceIdentifier(lhs.identifier, statement);
+    switch (dest.type) {
+      case "local":
+        return this.setLocal(dest.keyOrName, value, statement);
+    }
+    throw runtimeError(`cannot assign to ${lhs.identifier}`, statement);
   }
 
   evaluateCall(statement: RefinedStatement<"call">): void {
@@ -90,5 +109,18 @@ export class Interpreter {
       throw runtimeError(`attempted to set undeclared LOCAL: ${key}`, context);
     }
     this.#locals.set(key, value);
+  }
+
+  evaluateExpression(expression: Expression, context: LineContext): number {
+    switch (expression.type) {
+      case "literal": {
+        const token = expression.token;
+        switch (token.type) {
+          case "number":
+            return token.number;
+        }
+      }
+    }
+    throw runtimeError("invalid expression", context);
   }
 }

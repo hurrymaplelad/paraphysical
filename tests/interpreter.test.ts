@@ -14,7 +14,7 @@ Deno.test("Interpreter", async (t) => {
     interpreter.load(filename, await readExampleText(filename));
     interpreter.run(filename);
 
-    expect(interpreter.getLocal("OUT", context)).toEqual(0);
+    expect(interpreter.getLocal("OUT", context)).toEqual(1);
   });
 
   await t.step("throw parsing an invalid file", async () => {
