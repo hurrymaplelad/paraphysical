@@ -39,7 +39,10 @@ function parseLine(
   const [_, labelString, rest] = match;
   const label = parseInt(labelString, 10);
 
-  return { type: "comment", comment: rest, label, ...context };
+  if (rest.startsWith("C")) {
+    return { type: "comment", comment: rest, label, ...context };
+  }
+  throw makeParseError("Unrecognized statement", context);
 }
 
 type ParsedFile = Map<number, Statement>;
