@@ -4,7 +4,7 @@ import { tokenizeLine } from "../tokenizer.ts";
 Deno.test("tokenizeLine()", async (t) => {
   const context = { filename: "test.ppcl", sourceLineNumber: 0 };
 
-  await t.step("numbers", () => {
+  await t.step("Numbers", () => {
     let tokens;
     // Integer
     tokens = tokenizeLine("10", context);
@@ -14,10 +14,20 @@ Deno.test("tokenizeLine()", async (t) => {
     }]);
 
     // Decimal
-    tokens = tokenizeLine("99.989", context);
+    tokens = tokenizeLine(" 99.989 ", context);
     expect(tokens).toEqual([{
       type: "number",
       number: 99.989,
+    }]);
+  });
+
+  await t.step("Names", () => {
+    let tokens;
+    // Simple
+    tokens = tokenizeLine("boop ", context);
+    expect(tokens).toEqual([{
+      type: "name",
+      name: "boop",
     }]);
   });
 });
