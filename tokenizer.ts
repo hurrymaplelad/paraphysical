@@ -1,5 +1,8 @@
 import { LineContext, makeParseError } from "./errors.ts";
 
+const SYMBOLS = ["(", ")", ",", "="] as const;
+type SymbolsType = typeof SYMBOLS[number];
+
 type Token = Readonly<
   | {
     type: "number";
@@ -9,10 +12,7 @@ type Token = Readonly<
     type: "name";
     name: string;
   }
-  | { type: ")" }
-  | { type: "(" }
-  | { type: "," }
-  | { type: "=" }
+  | { type: SymbolsType }
 >;
 
 const tokenizers: ReadonlyArray<
@@ -22,9 +22,9 @@ const tokenizers: ReadonlyArray<
   }>
 > = [
   {
-    regex: /[(),=]/y,
+    regex: new RegExp(`[\\${SYMBOLS.join("\\")}]`, "y"),
     tokenize: (match) => ({
-      type: (match[0] as "(" | ")" | "," | "="),
+      type: (match[0] as SymbolsType),
     }),
   },
   {
