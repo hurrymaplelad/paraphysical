@@ -1,5 +1,5 @@
-import { tokenizeLine } from "../interpreter.ts";
 import { expect } from "https://deno.land/x/expect@v0.2.10/mod.ts";
+import { tokenizeLine } from "../tokenizer.ts";
 
 Deno.test("tokenizeLine()", async (t) => {
   const context = { filename: "test.ppcl", sourceLineNumber: 0 };
