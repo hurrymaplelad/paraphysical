@@ -4,6 +4,7 @@ import { parseLine } from "../parser.ts";
 
 Deno.test("parseLine()", async (t) => {
   const context = { filename: "test.ppcl", sourceLineNumber: 0 };
+
   await t.step("call statement", () => {
     let statement;
 
@@ -21,5 +22,13 @@ Deno.test("parseLine()", async (t) => {
       { type: "reference", identifier: "bar" },
       { type: "reference", identifier: "baz" },
     ]);
+  });
+
+  await t.step("assignment statement", () => {
+    let statement;
+
+    // Simple
+    statement = parseLine("00001 foo = 1", context);
+    assert(statement.type === "assignment");
   });
 });

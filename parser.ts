@@ -23,6 +23,8 @@ export type Statement = Readonly<
     }
     | {
       type: "assignment";
+      lhs: Expression;
+      rhs: Expression;
     }
   )
 >;
@@ -88,10 +90,16 @@ export function parseStatementTokens(
       switch (second?.type) {
         case "(":
           return parseCall(tokens, context);
+        case "=":
+          return parseAssignment(tokens, context);
       }
   }
   throw unexpectedTokenError({ actual: first }, context);
 }
+
+//
+// Statement Parsers
+//
 
 export function parseCall(
   tokens: Tokens,
@@ -101,7 +109,7 @@ export function parseCall(
   consumeExpected(tokens, "(", context);
   const args = [];
   while (!tokens.isDone() && tokens.peek()?.type != ")") {
-    args.push(parseArg(tokens, context));
+    args.push(parseExpression(tokens, context));
     if (tokens.peek()?.type === ",") {
       tokens.skip(1);
     }
@@ -110,26 +118,76 @@ export function parseCall(
   return { type: "call", functionName: functionName.name, args, ...context };
 }
 
-type Expression = Readonly<{
-  type: "reference";
-  identifier: string;
-}>;
+type Expression = Readonly<
+  | {
+    type: "reference";
+    identifier: string;
+  }
+  | {
+    type: "literal";
+    token: RefinedToken<"number">;
+  }
+>;
 
-export function parseArg(
+export function parseAssignment(
+  tokens: Tokens,
+  context: StatementContext,
+): Statement {
+  const lhs = parseReference(tokens, context);
+  consumeExpected(tokens, "=", context);
+  const rhs = parseExpression(tokens, context);
+  return {
+    ...context,
+    type: "assignment",
+    lhs,
+    rhs,
+  };
+}
+
+//
+// Expression Parsers
+//
+
+export function parseExpression(
   tokens: Tokens,
   context: StatementContext,
 ): Expression {
-  const first = tokens.next()?.value;
+  const first = tokens.peek();
   switch (first?.type) {
     case "name":
-      return {
-        type: "reference",
-        identifier: first.name,
-      };
+      return parseReference(tokens, context);
+    case "number":
+      return parseLiteral(tokens, context);
   }
   throw unexpectedTokenError({
     actual: first,
   }, context);
+}
+
+export function parseLiteral(
+  tokens: Tokens,
+  context: StatementContext,
+): Expression {
+  const next = tokens.next().value;
+  switch (next?.type) {
+    case "number":
+      return {
+        type: "literal",
+        token: next,
+      };
+  }
+  throw unexpectedTokenError({ actual: next }, context);
+}
+
+export function parseReference(
+  tokens: Tokens,
+  context: StatementContext,
+): Expression {
+  const nameToken = consumeExpected(tokens, "name", context);
+  return {
+    type: "reference",
+    identifier: nameToken.name,
+  };
 }
 
 //
