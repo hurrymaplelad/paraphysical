@@ -3,7 +3,7 @@ import { LineContext, parsingError } from "./errors.ts";
 export const SYMBOLS = ["(", ")", ",", "="] as const;
 export type SymbolsType = typeof SYMBOLS[number];
 
-export const KEYWORDS = ["IF", "THEN", "ELSE"] as const;
+export const KEYWORDS = ["IF", "THEN", "ELSE", "GOTO"] as const;
 export type KeywordsType = typeof KEYWORDS[number];
 export const KeywordSet: Set<string> = new Set(KEYWORDS);
 

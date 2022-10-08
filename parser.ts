@@ -39,6 +39,10 @@ export type Statement = Readonly<
       then: Statement;
       else: Statement | null;
     }
+    | {
+      type: "GOTO";
+      label: number;
+    }
   )
 >;
 
@@ -128,6 +132,8 @@ export function parseStatement(
   switch (first?.type) {
     case "IF":
       return parseConditional(tokens, context);
+    case "GOTO":
+      return parseGOTO(tokens, context);
     case "name":
       switch (second?.type) {
         case "(":
@@ -214,6 +220,25 @@ export function parseAssignment(
     type: "assignment",
     lhs,
     rhs,
+  };
+}
+
+export function parseGOTO(
+  tokens: Tokens,
+  context: StatementContext,
+): Statement {
+  consumeExpected(tokens, "GOTO", context);
+  const { number: label } = consumeExpected(tokens, "number", context);
+  if (!Number.isInteger(label) || label < 1 || label > MAX_LINE_LABEL) {
+    throw parsingError(
+      `Invalid GOTO: ${label}. Line number must be an integer between 1 and ${MAX_LINE_LABEL}`,
+      context,
+    );
+  }
+  return {
+    ...context,
+    type: "GOTO",
+    label,
   };
 }
 

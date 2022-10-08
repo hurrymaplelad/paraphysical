@@ -49,4 +49,20 @@ Deno.test("Interpreter", async (t) => {
     expect(interpreter.getPoint("X", context)).toEqual(2);
     expect(interpreter.getPoint("Y", context)).toEqual(0);
   });
+
+  await t.step("GOTO", () => {
+    const interpreter = new Interpreter();
+    const filename = "goto.ppcl";
+    const content = inlineExample(`
+      001  X = 0
+      002  X = X + 1
+      003  C| This example only makes sense in our interpreter,
+      004  C| where we can run the program only once. 
+      100  IF(X.LT.3) THEN GOTO 2
+    `);
+    interpreter.load(filename, content);
+    interpreter.run(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(3);
+  });
 });

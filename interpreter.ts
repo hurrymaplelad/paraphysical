@@ -70,6 +70,8 @@ export class Interpreter {
         return;
       case "conditional":
         return this.evaluateConditional(statement);
+      case "GOTO":
+        return this.evaluateGOTO(statement);
       default:
         // Enforce exhaustiveness
         assertNever(statement);
@@ -101,6 +103,13 @@ export class Interpreter {
         return this.setPoint(dest.name, value);
     }
     throw runtimeError(`cannot assign to ${lhs.identifier}`, statement);
+  }
+
+  evaluateGOTO(statement: RefinedStatement<"GOTO">): void {
+    const { label } = statement;
+    this.#currentFileState(statement).programCounter =
+      // Subtract one to account for bump after each statement in run()
+      label - 1;
   }
 
   evaluateCall(statement: RefinedStatement<"call">): void {
