@@ -1,14 +1,14 @@
 import { LineContext, parsingError } from "./errors.ts";
 
-const SYMBOLS = ["(", ")", ",", "="] as const;
-type SymbolsType = typeof SYMBOLS[number];
+export const SYMBOLS = ["(", ")", ",", "="] as const;
+export type SymbolsType = typeof SYMBOLS[number];
 
-const KEYWORDS = ["IF", "THEN", "ELSE"] as const;
-type KeywordsType = typeof KEYWORDS[number];
-const KeywordSet: Set<string> = new Set(KEYWORDS);
+export const KEYWORDS = ["IF", "THEN", "ELSE"] as const;
+export type KeywordsType = typeof KEYWORDS[number];
+export const KeywordSet: Set<string> = new Set(KEYWORDS);
 
 // Values are precedence, lower wins
-const INFIX_BINARY_OPERATORS = {
+export const INFIX_BINARY_OPERATORS = {
   // 3
   ".ROOT.": 3,
   // 4
@@ -31,7 +31,7 @@ const INFIX_BINARY_OPERATORS = {
   ".OR.": 8,
   ".XOR.": 8,
 } as const;
-type InfixBinaryOperatorType = keyof typeof INFIX_BINARY_OPERATORS;
+export type InfixBinaryOperatorType = keyof typeof INFIX_BINARY_OPERATORS;
 
 export type Token = Readonly<
   | {

@@ -187,7 +187,7 @@ export class Interpreter {
           case "number":
             return token.number;
         }
-        break; // appease deno lint, should be unreachable
+        break; // appease deno lint, unreachable
       }
       case "reference": {
         const id = parseReferenceIdentifier(
@@ -200,6 +200,10 @@ export class Interpreter {
           case "point":
             return this.getPoint(id.name, context);
         }
+        break; // appease deno lint, unreachable
+      }
+      case "ibop": {
+        throw new Error("not implemented");
       }
     }
   }

@@ -5,7 +5,7 @@ import {
   parsingError,
   unexpectedTokenError,
 } from "./errors.ts";
-import { Token, tokenizeLine } from "./tokenizer.ts";
+import { InfixBinaryOperatorType, Token, tokenizeLine } from "./tokenizer.ts";
 
 const MAX_LINE_LABEL = 32767;
 
@@ -230,6 +230,12 @@ export type Expression = Readonly<
     type: "literal";
     token: RefinedToken<"number">;
   }
+  | {
+    type: "ibop"; // infix binary operation
+    operator: InfixBinaryOperatorType;
+    lhs: Expression;
+    rhs: Expression;
+  }
 >;
 
 // Union refinement: https://engineering.widen.com/blog/Demystifying-TypeScripts-Extract-Type/
@@ -240,23 +246,65 @@ export type RefinedExpression<Type extends Expression["type"]> = Extract<
 
 export function parseExpression(
   tokens: Tokens,
-  context: StatementContext,
+  context: LineContext,
+  initialLHS: Expression | null = null,
 ): Expression {
+  const lhs = initialLHS ?? parseExpressionLHS(tokens, context);
+  if (tokens.peek()?.type != "ibop") {
+    return lhs;
+  }
+  const opToken = consumeExpected(tokens, "ibop", context);
+  const rhs = parseExpressionRHS(tokens, opToken, context);
+
+  return parseExpression(tokens, context, {
+    type: "ibop",
+    operator: opToken.operator,
+    lhs,
+    rhs,
+  });
+}
+
+function parseExpressionLHS(tokens: Tokens, context: LineContext): Expression {
   const first = tokens.peek();
   switch (first?.type) {
     case "name":
       return parseReference(tokens, context);
     case "number":
       return parseLiteral(tokens, context);
+    case "(": {
+      tokens.skip();
+      const exp = parseExpression(tokens, context);
+      consumeExpected(tokens, ")", context);
+      return exp;
+    }
   }
   throw unexpectedTokenError({
     actual: first,
   }, context);
 }
 
+function parseExpressionRHS(
+  tokens: Tokens,
+  opToken: RefinedToken<"ibop">,
+  context: LineContext,
+): Expression {
+  const next = tokens.peek();
+  const nextNext = tokens.peek(1);
+  if (
+    // Prioritize parenthesized expressions
+    next?.type === "(" ||
+    // Defer to higher precedence opertators
+    (nextNext?.type === "ibop" && nextNext.precedence < opToken.precedence)
+  ) {
+    return parseExpression(tokens, context);
+  } else {
+    return parseExpressionLHS(tokens, context);
+  }
+}
+
 export function parseLiteral(
   tokens: Tokens,
-  context: StatementContext,
+  context: LineContext,
 ): Expression {
   const next = tokens.next().value;
   switch (next?.type) {
@@ -271,7 +319,7 @@ export function parseLiteral(
 
 export function parseReference(
   tokens: Tokens,
-  context: StatementContext,
+  context: LineContext,
 ): RefinedExpression<"reference"> {
   const nameToken = consumeExpected(tokens, "name", context);
   return {
