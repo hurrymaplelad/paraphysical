@@ -22,6 +22,18 @@ Deno.test("Interpreter", async (t) => {
     expect(interpreter.getPoint("HELLO.WORLD", context)).toEqual(2);
   });
 
+  await t.step("Binary Expressions", () => {
+    const interpreter = new Interpreter();
+    const filename = "binex.ppcl";
+    const content = inlineExample(`
+      001  X = 2 + 3 * 4
+    `);
+    interpreter.load(filename, content);
+    interpreter.run(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(14);
+  });
+
   await t.step("Conditionals", () => {
     const interpreter = new Interpreter();
     const filename = "conditional.ppcl";

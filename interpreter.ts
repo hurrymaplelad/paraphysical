@@ -4,6 +4,7 @@ import {
   ParsedFile,
   parseFile,
   parseReferenceIdentifier,
+  RefinedExpression,
   RefinedStatement,
   Statement,
 } from "./parser.ts";
@@ -181,30 +182,92 @@ export class Interpreter {
 
   evaluateExpression(expression: Expression, context: LineContext): number {
     switch (expression.type) {
-      case "literal": {
-        const token = expression.token;
-        switch (token.type) {
-          case "number":
-            return token.number;
-        }
-        break; // appease deno lint, unreachable
+      case "literal":
+        return this.evaluateLiteralExpression(expression, context);
+      case "reference":
+        return this.evaluateReferenceExpression(expression, context);
+      case "ibop":
+        return this.evaluateInfixBinaryOperation(expression, context);
+    }
+  }
+
+  evaluateLiteralExpression(
+    expression: RefinedExpression<"literal">,
+    _context: LineContext,
+  ): number {
+    const token = expression.token;
+    switch (token.type) {
+      case "number":
+        return token.number;
+    }
+  }
+
+  evaluateReferenceExpression(
+    expression: RefinedExpression<"reference">,
+    context: LineContext,
+  ): number {
+    const id = parseReferenceIdentifier(
+      expression.identifier,
+      context,
+    );
+    switch (id.type) {
+      case "local":
+        return this.getLocal(id.keyOrName, context);
+      case "point":
+        return this.getPoint(id.name, context);
+    }
+  }
+
+  evaluateInfixBinaryOperation(
+    expression: RefinedExpression<"ibop">,
+    context: LineContext,
+  ): number {
+    const lhsValue = this.evaluateExpression(expression.lhs, context);
+    const rhsValue = () => this.evaluateExpression(expression.rhs, context);
+    switch (expression.operator) {
+      // Arithmetic
+      case "+":
+        return lhsValue + rhsValue();
+      case "-":
+        return lhsValue - rhsValue();
+      case "*":
+        return lhsValue * rhsValue();
+      case "/":
+        return lhsValue / rhsValue();
+      case ".ROOT.":
+        return Math.pow(lhsValue, 1 / rhsValue());
+
+        // Comparison
+      case ".EQ.":
+        return Number(lhsValue === rhsValue());
+      case ".NE.":
+        return Number(lhsValue !== rhsValue());
+      case ".GT.":
+        return Number(lhsValue > rhsValue());
+      case ".GE.":
+        return Number(lhsValue >= rhsValue());
+      case ".LT.":
+        return Number(lhsValue < rhsValue());
+      case ".LE.":
+        return Number(lhsValue <= rhsValue());
+
+      // Logical
+      case ".AND.":
+        return Number(lhsValue && rhsValue());
+      case ".NAND.":
+        return Number(!(lhsValue && rhsValue()));
+      case ".OR.":
+        return Number(lhsValue || rhsValue());
+      case ".XOR.": {
+        const rhsVal = rhsValue();
+        return Number((lhsValue || rhsVal) && !(lhsValue && rhsVal));
       }
-      case "reference": {
-        const id = parseReferenceIdentifier(
-          expression.identifier,
+      default:
+        assertNever(expression.operator);
+        throw runtimeError(
+          `operator ${expression.operator} not implemented`,
           context,
         );
-        switch (id.type) {
-          case "local":
-            return this.getLocal(id.keyOrName, context);
-          case "point":
-            return this.getPoint(id.name, context);
-        }
-        break; // appease deno lint, unreachable
-      }
-      case "ibop": {
-        throw new Error("not implemented");
-      }
     }
   }
 }
