@@ -28,6 +28,12 @@ export type Statement = Readonly<
       lhs: RefinedExpression<"reference">;
       rhs: Expression;
     }
+    | {
+      type: "conditional";
+      condition: Expression;
+      then: Statement;
+      else: Statement | null;
+    }
   )
 >;
 
@@ -86,7 +92,15 @@ export function parseLine(
 
   const tokenList = tokenizeLine(rest, context);
   const tokens = new ArrayIterator(tokenList);
-  return parseStatementTokens(tokens, { label, ...context });
+  const statement = parseStatement(tokens, { label, ...context });
+
+  // Check for trailing tokens
+  const trailing = tokens.next().value;
+  if (trailing != null) {
+    throw unexpectedTokenError({ actual: trailing }, context);
+  }
+
+  return statement;
 }
 
 //
@@ -100,35 +114,53 @@ type RefinedToken<Type extends Token["type"]> = Extract<
   Record<"type", Type>
 >;
 
-export function parseStatementTokens(
+export function parseStatement(
   tokens: Tokens,
   context: StatementContext,
 ): Statement {
   const first = tokens.peek(0);
   const second = tokens.peek(1);
-  const statement = (() => {
-    switch (first?.type) {
-      case "name":
-        switch (second?.type) {
-          case "(":
-            return parseCall(tokens, context);
-          case "=":
-            return parseAssignment(tokens, context);
-        }
-    }
-    throw unexpectedTokenError({ actual: first }, context);
-  })();
-
-  const trailing = tokens.next().value;
-  if (trailing != null) {
-    throw unexpectedTokenError({ actual: trailing }, context);
+  switch (first?.type) {
+    case "IF":
+      return parseConditional(tokens, context);
+    case "name":
+      switch (second?.type) {
+        case "(":
+          return parseCall(tokens, context);
+        case "=":
+          return parseAssignment(tokens, context);
+      }
   }
-  return statement;
+  throw unexpectedTokenError({ actual: first }, context);
 }
 
 //
 // Statement Parsers
 //
+
+export function parseConditional(
+  tokens: Tokens,
+  context: StatementContext,
+): Statement {
+  consumeExpected(tokens, "IF", context);
+  consumeExpected(tokens, "(", context);
+  const condition = parseExpression(tokens, context);
+  consumeExpected(tokens, ")", context);
+  consumeExpected(tokens, "THEN", context);
+  const thn = parseStatement(tokens, context);
+  let els = null;
+  if (tokens.peek()?.type === "ELSE") {
+    tokens.skip(1);
+    els = parseStatement(tokens, context);
+  }
+  return {
+    ...context,
+    type: "conditional",
+    condition,
+    then: thn,
+    else: els,
+  };
+}
 
 export function parseCall(
   tokens: Tokens,

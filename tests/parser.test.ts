@@ -32,6 +32,15 @@ Deno.test("parseLine()", async (t) => {
     assert(statement.type === "assignment");
   });
 
+  await t.step("conditional statement", () => {
+    let statement;
+    statement = parseLine("1 IF(X) THEN Y = Z ELSE ON(Z)", context);
+    assert(statement.type === "conditional");
+    assert(statement.condition.type === "reference");
+    assert(statement.then.type === "assignment");
+    assert(statement.else?.type === "call");
+  });
+
   await t.step("invalid statements", () => {
     // Trailing characters
     expect(() => parseLine("00001 foo = 1 a", context)).toThrow(/Parse Error/);
