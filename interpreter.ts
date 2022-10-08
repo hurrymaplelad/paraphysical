@@ -9,32 +9,37 @@ import {
 
 const LOCAL_DELIMITER = ":" as const;
 
+type FileEvaluationState = {
+  readonly locals: Map<string, number>;
+  programCounter: number;
+};
+
 export class Interpreter {
-  #files: Map<string, ParsedFile>;
+  #files: Map<string, [ParsedFile, FileEvaluationState]>;
   // Key is filename:variablen. Use getLocal() / setLocal()
-  #locals: Map<string, number>;
   #points: Map<string, number>;
   #currentFilename = "";
 
   constructor() {
     this.#files = new Map();
-    this.#locals = new Map();
     this.#points = new Map();
   }
 
   load(filename: string, contents: string): void {
-    this.#files.set(filename, parseFile(contents, { filename }));
+    const parsedFile = parseFile(contents, { filename });
+    const state = { locals: new Map(), programCounter: 0 };
+    this.#files.set(filename, [parsedFile, state]);
   }
 
   run(filename: string): void {
-    let programCounter = 0;
-    const file = this.#files.get(filename);
-    if (file == null) {
+    const record = this.#files.get(filename);
+    if (record == null) {
       throw new Error(`Cannot run "${filename}" - not loaded.`);
     }
+    const [{ statements, maxLabel }, state] = record;
     this.#currentFilename = filename;
-    while (programCounter <= file.maxLabel) {
-      const statement = file.statements.get(programCounter);
+    while (state.programCounter <= maxLabel) {
+      const statement = statements.get(state.programCounter);
       // if (statement != null) {
       //   console.log("evaluating", statement.label, statement.type);
       // }
@@ -45,8 +50,16 @@ export class Interpreter {
         case "assignment":
           this.evaluateAssignment(statement);
       }
-      programCounter += 1;
+      state.programCounter += 1;
     }
+  }
+
+  #currentFileState(context: LineContext): FileEvaluationState {
+    const record = this.#files.get(this.#currentFilename);
+    if (record == null) {
+      throw runtimeError("No running file", context);
+    }
+    return record[1];
   }
 
   evaluateAssignment(
@@ -79,40 +92,54 @@ export class Interpreter {
         throw runtimeError(`invalid LOCAL declaration: ${arg.type}`, context);
       }
       const name = arg.identifier;
-      const key = this.#keyLocal(name);
+      if (name.indexOf(LOCAL_DELIMITER) > -1) {
+        throw runtimeError(`invalid local declaration: ${name}`, context);
+      }
+      const key = this.#keyLocal(name, context);
       if (this.#isLocalDeclared(key)) {
         throw runtimeError(`attemped to re-declare LOCAL: ${name}`, context);
       }
-      this.#locals.set(key, 0);
+      this.#currentFileState(context).locals.set(name, 0);
     }
   }
 
-  #keyLocal(nameOrKey: string, filename: string | null = null): string {
-    return nameOrKey.indexOf(LOCAL_DELIMITER) > -1
-      ? nameOrKey
-      : [filename ?? this.#currentFilename, nameOrKey].join(LOCAL_DELIMITER);
+  #keyLocal(nameOrKey: string, context: LineContext): [string, string] {
+    const parts = nameOrKey.split(LOCAL_DELIMITER);
+    switch (parts.length) {
+      case 1:
+        return [this.#currentFilename, nameOrKey];
+      case 2:
+        return [parts[0], parts[1]];
+      default:
+        throw runtimeError(`invalid local: ${nameOrKey}`, context);
+    }
   }
 
-  #isLocalDeclared(key: string): boolean {
-    return this.#locals.has(key);
+  #isLocalDeclared([filename, name]: [string, string]): boolean {
+    return this.#files.get(filename)?.[1].locals.has(name) ?? false;
   }
 
   getLocal(nameOrKey: string, context: LineContext): number {
-    const key = this.#keyLocal(nameOrKey);
+    const [filename, name] = this.#keyLocal(nameOrKey, context);
 
-    const value = this.#locals.get(key);
+    const value = this.#files.get(filename)?.[1].locals.get(name);
     if (value == null) {
-      throw runtimeError(`attempted to read undeclared LOCAL: ${key}`, context);
+      throw runtimeError(
+        `attempted to read undeclared LOCAL: ${nameOrKey}`,
+        context,
+      );
     }
     return value;
   }
 
   setLocal(nameOrKey: string, value: number, context: LineContext): void {
-    const key = this.#keyLocal(nameOrKey);
-    if (!this.#isLocalDeclared(key)) {
+    const key = this.#keyLocal(nameOrKey, context);
+    const [filename, name] = key;
+    const fileState = this.#files.get(filename)?.[1];
+    if (fileState == null || !this.#isLocalDeclared(key)) {
       throw runtimeError(`attempted to set undeclared LOCAL: ${key}`, context);
     }
-    this.#locals.set(key, value);
+    fileState.locals.set(name, value);
   }
 
   getPoint(name: string, context: LineContext): number {
