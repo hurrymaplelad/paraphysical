@@ -1,10 +1,11 @@
-import { LineContext, runtimeError } from "./errors.ts";
+import { assertNever, LineContext, runtimeError } from "./errors.ts";
 import {
   Expression,
   ParsedFile,
   parseFile,
   parseReferenceIdentifier,
   RefinedStatement,
+  Statement,
 } from "./parser.ts";
 
 const LOCAL_DELIMITER = ":" as const;
@@ -43,12 +44,8 @@ export class Interpreter {
       // if (statement != null) {
       //   console.log("evaluating", statement.label, statement.type);
       // }
-      switch (statement?.type) {
-        case "call":
-          this.evaluateCall(statement);
-          break;
-        case "assignment":
-          this.evaluateAssignment(statement);
+      if (statement != null) {
+        this.evaluateStatement(statement);
       }
       state.programCounter += 1;
     }
@@ -60,6 +57,34 @@ export class Interpreter {
       throw runtimeError("No running file", context);
     }
     return record[1];
+  }
+
+  evaluateStatement(statement: Statement) {
+    switch (statement.type) {
+      case "assignment":
+        return this.evaluateAssignment(statement);
+      case "call":
+        return this.evaluateCall(statement);
+      case "comment":
+        return;
+      case "conditional":
+        return this.evaluateConditional(statement);
+      default:
+        // Enforce exhaustiveness
+        assertNever(statement);
+    }
+  }
+
+  evaluateConditional(statement: RefinedStatement<"conditional">): void {
+    const conditionValue = this.evaluateExpression(
+      statement.condition,
+      statement,
+    );
+    if (conditionValue) {
+      this.evaluateStatement(statement.then);
+    } else if (statement.else != null) {
+      this.evaluateStatement(statement.else);
+    }
   }
 
   evaluateAssignment(
@@ -162,8 +187,20 @@ export class Interpreter {
           case "number":
             return token.number;
         }
+        break; // appease deno lint, should be unreachable
+      }
+      case "reference": {
+        const id = parseReferenceIdentifier(
+          expression.identifier,
+          context,
+        );
+        switch (id.type) {
+          case "local":
+            return this.getLocal(id.keyOrName, context);
+          case "point":
+            return this.getPoint(id.name, context);
+        }
       }
     }
-    throw runtimeError("invalid expression", context);
   }
 }

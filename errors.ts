@@ -1,3 +1,4 @@
+import { Statement } from "./parser.ts";
 import { Token } from "./tokenizer.ts";
 
 export type LineContext = Readonly<{
@@ -53,3 +54,14 @@ export function unexpectedTokenError({ expected, actual }: Readonly<{
     context,
   );
 }
+
+export function invalidStatementError(
+  { outer, inner }: Readonly<
+    { outer: Statement["type"]; inner: Statement["type"] }
+  >,
+  context: LineContext,
+): Error {
+  return parsingError(`no ${inner} statements in ${outer}s`, context);
+}
+
+export function assertNever(_: never): void {}

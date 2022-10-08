@@ -5,16 +5,36 @@ async function readExampleText(filename: string): Promise<string> {
   return await Deno.readTextFile(`examples/${filename}`);
 }
 
+function inlineExample(content: string): string {
+  return content.split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
+}
+
 Deno.test("Interpreter", async (t) => {
-  const interpreter = new Interpreter();
   const context = { filename: "test", sourceLineNumber: NaN };
 
   await t.step("evaluate a simple file", async () => {
+    const interpreter = new Interpreter();
     const filename = "hello.ppcl";
     interpreter.load(filename, await readExampleText(filename));
     interpreter.run(filename);
 
     expect(interpreter.getLocal("OUT", context)).toEqual(1);
     expect(interpreter.getPoint("HELLO.WORLD", context)).toEqual(2);
+  });
+
+  await t.step("conditional", () => {
+    const interpreter = new Interpreter();
+    const filename = "conditional.ppcl";
+    const content = inlineExample(`
+      1 X = 1
+      2 Y = 1
+      3 IF(X) THEN Y = 0
+      4 IF(Y) THEN X = 0 ELSE X = 2
+    `);
+    interpreter.load(filename, content);
+    interpreter.run(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(2);
+    expect(interpreter.getPoint("Y", context)).toEqual(0);
   });
 });

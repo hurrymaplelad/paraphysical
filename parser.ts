@@ -1,5 +1,10 @@
 import ArrayIterator from "./array_iterator.ts";
-import { LineContext, parsingError, unexpectedTokenError } from "./errors.ts";
+import {
+  invalidStatementError,
+  LineContext,
+  parsingError,
+  unexpectedTokenError,
+} from "./errors.ts";
 import { Token, tokenizeLine } from "./tokenizer.ts";
 
 const MAX_LINE_LABEL = 32767;
@@ -148,10 +153,12 @@ export function parseConditional(
   consumeExpected(tokens, ")", context);
   consumeExpected(tokens, "THEN", context);
   const thn = parseStatement(tokens, context);
+  validateConditionalSubStatement(thn.type, context);
   let els = null;
   if (tokens.peek()?.type === "ELSE") {
     tokens.skip(1);
     els = parseStatement(tokens, context);
+    validateConditionalSubStatement(els.type, context);
   }
   return {
     ...context,
@@ -160,6 +167,22 @@ export function parseConditional(
     then: thn,
     else: els,
   };
+}
+
+const FORBIDDEN_CONDITIONAL_SUB_STATEMENTS: Set<Statement["type"]> = new Set([
+  "conditional",
+]);
+
+function validateConditionalSubStatement(
+  type: Statement["type"],
+  context: LineContext,
+): void {
+  if (FORBIDDEN_CONDITIONAL_SUB_STATEMENTS.has(type)) {
+    throw invalidStatementError(
+      { outer: "conditional", inner: type },
+      context,
+    );
+  }
 }
 
 export function parseCall(
