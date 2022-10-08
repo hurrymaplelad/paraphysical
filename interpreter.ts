@@ -13,11 +13,13 @@ export class Interpreter {
   #files: Map<string, ParsedFile>;
   // Key is filename:variablen. Use getLocal() / setLocal()
   #locals: Map<string, number>;
+  #points: Map<string, number>;
   #currentFilename = "";
 
   constructor() {
     this.#files = new Map();
     this.#locals = new Map();
+    this.#points = new Map();
   }
 
   load(filename: string, contents: string): void {
@@ -56,6 +58,8 @@ export class Interpreter {
     switch (dest.type) {
       case "local":
         return this.setLocal(dest.keyOrName, value, statement);
+      case "point":
+        return this.setPoint(dest.name, value);
     }
     throw runtimeError(`cannot assign to ${lhs.identifier}`, statement);
   }
@@ -109,6 +113,18 @@ export class Interpreter {
       throw runtimeError(`attempted to set undeclared LOCAL: ${key}`, context);
     }
     this.#locals.set(key, value);
+  }
+
+  getPoint(name: string, context: LineContext): number {
+    const value = this.#points.get(name);
+    if (value == null) {
+      throw runtimeError(`point ${name} is not defined`, context);
+    }
+    return value;
+  }
+
+  setPoint(name: string, value: number): void {
+    this.#points.set(name, value);
   }
 
   evaluateExpression(expression: Expression, context: LineContext): number {

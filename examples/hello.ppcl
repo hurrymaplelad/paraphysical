@@ -2,3 +2,4 @@
 00410	LOCAL("OUT")
 01000	C === Main Control Loop ===
 01010	"$OUT" = 1
+01020	"HELLO.WORLD" = 2

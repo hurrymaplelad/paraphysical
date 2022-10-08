@@ -232,12 +232,13 @@ export type ReferenceIdentifier = Readonly<
   }
   | {
     type: "point";
+    name: string;
   }
 >;
 
 export function parseReferenceIdentifier(
   identifier: string,
-  context: LineContext,
+  _context: LineContext,
 ): ReferenceIdentifier {
   if (identifier.startsWith("$")) {
     return {
@@ -245,7 +246,10 @@ export function parseReferenceIdentifier(
       keyOrName: identifier.slice(1),
     };
   }
-  throw parsingError(`invalid reference: ${identifier}`, context);
+  return {
+    type: "point",
+    name: identifier,
+  };
 }
 
 //

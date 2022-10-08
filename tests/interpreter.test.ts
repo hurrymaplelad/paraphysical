@@ -15,5 +15,6 @@ Deno.test("Interpreter", async (t) => {
     interpreter.run(filename);
 
     expect(interpreter.getLocal("OUT", context)).toEqual(1);
+    expect(interpreter.getPoint("HELLO.WORLD", context)).toEqual(2);
   });
 });
