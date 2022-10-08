@@ -3,6 +3,10 @@ import { LineContext, parsingError } from "./errors.ts";
 const SYMBOLS = ["(", ")", ",", "="] as const;
 type SymbolsType = typeof SYMBOLS[number];
 
+const KEYWORDS = ["IF", "THEN", "ELSE"] as const;
+type KeywordsType = typeof KEYWORDS[number];
+const KeywordSet: Set<string> = new Set(KEYWORDS);
+
 export type Token = Readonly<
   | {
     type: "number";
@@ -13,6 +17,7 @@ export type Token = Readonly<
     name: string;
   }
   | { type: SymbolsType }
+  | { type: KeywordsType }
 >;
 
 const tokenizers: ReadonlyArray<
@@ -24,11 +29,11 @@ const tokenizers: ReadonlyArray<
   {
     regex: new RegExp(`[\\${SYMBOLS.join("\\")}]`, "y"),
     tokenize: (match) => ({
-      type: (match[0] as SymbolsType),
+      type: match[0] as SymbolsType,
     }),
   },
   {
-    regex: /[1-9][0-9]*(\.[0-9]+)?/y,
+    regex: /[0-9]+(\.[0-9]+)?/y,
     tokenize: (match) => ({
       type: "number",
       number: Number(match[0]),
@@ -36,10 +41,17 @@ const tokenizers: ReadonlyArray<
   },
   {
     regex: /[A-Za-z][A-Za-z0-9]*/y,
-    tokenize: (match) => ({
-      type: "name",
-      name: match[0],
-    }),
+    tokenize: (match) => {
+      const name = match[0];
+      return KeywordSet.has(name)
+        ? {
+          type: name as KeywordsType,
+        }
+        : {
+          type: "name",
+          name,
+        };
+    },
   },
   {
     regex: /"([A-Za-z0-9:$ .,_'-]+)"/y,

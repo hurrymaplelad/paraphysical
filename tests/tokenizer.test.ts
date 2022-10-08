@@ -58,4 +58,40 @@ Deno.test("tokenizeLine()", async (t) => {
       { type: ")" },
     ]);
   });
+
+  await t.step("Conditionals", () => {
+    const tokens = tokenizeLine("IF(X) THEN Y = Z ELSE ON(Z)", context);
+    expect(tokens).toEqual([
+      {
+        type: "IF",
+      },
+      { type: "(" },
+      {
+        type: "name",
+        name: "X",
+      },
+      { type: ")" },
+      { type: "THEN" },
+      {
+        type: "name",
+        name: "Y",
+      },
+      { type: "=" },
+      {
+        type: "name",
+        name: "Z",
+      },
+      { type: "ELSE" },
+      {
+        type: "name",
+        name: "ON",
+      },
+      { type: "(" },
+      {
+        type: "name",
+        name: "Z",
+      },
+      { type: ")" },
+    ]);
+  });
 });
