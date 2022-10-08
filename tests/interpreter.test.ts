@@ -16,12 +16,4 @@ Deno.test("Interpreter", async (t) => {
 
     expect(interpreter.getLocal("OUT", context)).toEqual(1);
   });
-
-  await t.step("throw parsing an invalid file", async () => {
-    const filename = "invalid-line-number.ppcl";
-    const contents = await readExampleText(filename);
-    expect(() => interpreter.load(filename, contents)).toThrow(
-      /Parse Error.*invalid-line-number.ppcl:2/,
-    );
-  });
 });

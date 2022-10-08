@@ -9,7 +9,7 @@ Deno.test("parseLine()", async (t) => {
     let statement;
 
     // Simple
-    statement = parseLine("00001 foo(bar)", context);
+    statement = parseLine("1 foo(bar)", context);
     assert(statement.type === "call");
     expect(statement.functionName).toEqual("foo");
     expect(statement.args).toEqual([{ type: "reference", identifier: "bar" }]);

@@ -2,6 +2,8 @@ import ArrayIterator from "./array_iterator.ts";
 import { LineContext, parsingError, unexpectedTokenError } from "./errors.ts";
 import { Token, tokenizeLine } from "./tokenizer.ts";
 
+const MAX_LINE_LABEL = 32767;
+
 export type StatementContext = Readonly<
   LineContext & {
     // The authored line number at the start of each line
@@ -63,12 +65,19 @@ export function parseLine(
   context: LineContext,
 ): Statement {
   // Line label
-  const labelMatch = /^([0-9]{5})\s+(.*)$/.exec(line);
+  const labelMatch = /^([0-9]{1,5})\s+(.*)$/.exec(line);
+  const labelError = parsingError(
+    `Line must start with number between 1 and ${MAX_LINE_LABEL}`,
+    context,
+  );
   if (labelMatch == null) {
-    throw parsingError("Line must start with 5 digit label", context);
+    throw labelError;
   }
   const [_, labelString, rest] = labelMatch;
   const label = parseInt(labelString, 10);
+  if (label === 0 || label > MAX_LINE_LABEL) {
+    throw labelError;
+  }
 
   // Comment
   if (rest.startsWith("C")) {
