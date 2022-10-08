@@ -94,4 +94,34 @@ Deno.test("tokenizeLine()", async (t) => {
       { type: ")" },
     ]);
   });
+
+  await t.step("Binary Operators", () => {
+    const tokens = tokenizeLine("(AB + C).EQ.9.0", context);
+    expect(tokens).toEqual([
+      { type: "(" },
+      {
+        type: "name",
+        name: "AB",
+      },
+      {
+        type: "ibop",
+        operator: "+",
+        precedence: 5,
+      },
+      {
+        type: "name",
+        name: "C",
+      },
+      { type: ")" },
+      {
+        type: "ibop",
+        operator: ".EQ.",
+        precedence: 6,
+      },
+      {
+        type: "number",
+        number: 9.0,
+      },
+    ]);
+  });
 });

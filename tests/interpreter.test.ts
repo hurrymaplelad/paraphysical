@@ -12,7 +12,7 @@ function inlineExample(content: string): string {
 Deno.test("Interpreter", async (t) => {
   const context = { filename: "test", sourceLineNumber: NaN };
 
-  await t.step("evaluate a simple file", async () => {
+  await t.step("Hello World", async () => {
     const interpreter = new Interpreter();
     const filename = "hello.ppcl";
     interpreter.load(filename, await readExampleText(filename));
@@ -22,7 +22,7 @@ Deno.test("Interpreter", async (t) => {
     expect(interpreter.getPoint("HELLO.WORLD", context)).toEqual(2);
   });
 
-  await t.step("conditional", () => {
+  await t.step("Conditionals", () => {
     const interpreter = new Interpreter();
     const filename = "conditional.ppcl";
     const content = inlineExample(`

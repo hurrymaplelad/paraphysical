@@ -5,7 +5,7 @@ import { parseLine } from "../parser.ts";
 Deno.test("parseLine()", async (t) => {
   const context = { filename: "test.ppcl", sourceLineNumber: 0 };
 
-  await t.step("call statement", () => {
+  await t.step("Call Statements", () => {
     let statement;
 
     // Simple
@@ -24,7 +24,7 @@ Deno.test("parseLine()", async (t) => {
     ]);
   });
 
-  await t.step("assignment statement", () => {
+  await t.step("Assignment Statements", () => {
     let statement;
 
     // Simple
@@ -32,7 +32,7 @@ Deno.test("parseLine()", async (t) => {
     assert(statement.type === "assignment");
   });
 
-  await t.step("conditional statement", () => {
+  await t.step("Conditional Statements", () => {
     let statement;
     statement = parseLine("1 IF(X) THEN Y = Z ELSE ON(Z)", context);
     assert(statement.type === "conditional");
@@ -41,7 +41,7 @@ Deno.test("parseLine()", async (t) => {
     assert(statement.else?.type === "call");
   });
 
-  await t.step("invalid statements", () => {
+  await t.step("Invalid Statements", () => {
     // Trailing characters
     expect(() => parseLine("00001 foo = 1 a", context)).toThrow(/Parse Error/);
   });

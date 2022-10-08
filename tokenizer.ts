@@ -7,6 +7,32 @@ const KEYWORDS = ["IF", "THEN", "ELSE"] as const;
 type KeywordsType = typeof KEYWORDS[number];
 const KeywordSet: Set<string> = new Set(KEYWORDS);
 
+// Values are precedence, lower wins
+const INFIX_BINARY_OPERATORS = {
+  // 3
+  ".ROOT.": 3,
+  // 4
+  "*": 4,
+  "/": 4,
+  // 5
+  "+": 5,
+  "-": 5,
+  // 6
+  ".EQ.": 6,
+  ".NE.": 6,
+  ".GT.": 6,
+  ".GE.": 6,
+  ".LT.": 6,
+  ".LE.": 6,
+  // 7
+  ".AND.": 7,
+  ".NAND.": 7,
+  // 8
+  ".OR.": 8,
+  ".XOR.": 8,
+} as const;
+type InfixBinaryOperatorType = keyof typeof INFIX_BINARY_OPERATORS;
+
 export type Token = Readonly<
   | {
     type: "number";
@@ -15,6 +41,11 @@ export type Token = Readonly<
   | {
     type: "name";
     name: string;
+  }
+  | {
+    type: "ibop";
+    operator: InfixBinaryOperatorType;
+    precedence: number;
   }
   | { type: SymbolsType }
   | { type: KeywordsType }
@@ -31,6 +62,22 @@ const tokenizers: ReadonlyArray<
     tokenize: (match) => ({
       type: match[0] as SymbolsType,
     }),
+  },
+  {
+    regex: new RegExp(
+      Object.keys(INFIX_BINARY_OPERATORS)
+        .map((op) => op.length === 1 ? `\\${op}` : op.replace(".", "\\."))
+        .join("|"),
+      "y",
+    ),
+    tokenize: (match) => {
+      const op = match[0] as InfixBinaryOperatorType;
+      return {
+        type: "ibop",
+        operator: op,
+        precedence: INFIX_BINARY_OPERATORS[op],
+      };
+    },
   },
   {
     regex: /[0-9]+(\.[0-9]+)?/y,
