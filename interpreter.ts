@@ -1,4 +1,10 @@
-import { assertNever, LineContext, runtimeError } from "./errors.ts";
+import { Clock, SystemClock } from "./clocks.ts";
+import {
+  assertNever,
+  fileNotLoaded,
+  LineContext,
+  runtimeError,
+} from "./errors.ts";
 import {
   Expression,
   ParsedFile,
@@ -21,35 +27,59 @@ export class Interpreter {
   // Key is filename:variablen. Use getLocal() / setLocal()
   #points: Map<string, number>;
   #currentFilename = "";
+  readonly clock: Clock;
 
-  constructor() {
+  constructor(options: Readonly<{ clock?: Clock }> | null = null) {
     this.#files = new Map();
     this.#points = new Map();
+    this.clock = options?.clock ?? new SystemClock();
   }
 
   load(filename: string, contents: string): void {
     const parsedFile = parseFile(contents, { filename });
-    const state = { locals: new Map(), programCounter: 0 };
+    const state = {
+      locals: new Map(),
+      programCounter: 0,
+    };
     this.#files.set(filename, [parsedFile, state]);
   }
 
-  runOnce(filename: string): void {
+  /**
+   * Run the argument file until the first time the final line
+   * executes. Yields after each line.
+   *
+   * Program state will remain in this interpreter. For example,
+   * if the final statement was a GOTO, the programCounter will point
+   * to the GOTO line if the file is run again.
+   */
+  runOnceSync(
+    filename: string,
+  ): FileEvaluationState {
     const record = this.#files.get(filename);
     if (record == null) {
-      throw new Error(`Cannot run "${filename}" - not loaded.`);
+      throw fileNotLoaded(filename);
     }
     const [{ statements, maxLabel }, state] = record;
     this.#currentFilename = filename;
+
     while (state.programCounter <= maxLabel) {
       const statement = statements.get(state.programCounter);
+      // It's important to increment the program counter *before* evaluating
+      // the statement in case it's a GOTO or similar.
+      state.programCounter += 1;
       // if (statement != null) {
       //   console.log("evaluating", statement.label, statement.type);
       // }
       if (statement != null) {
         this.evaluateStatement(statement);
       }
-      state.programCounter += 1;
+      // Check if we reached the end of the file, which triggers
+      // time increments and such.
+      if (statement?.label === maxLabel) {
+        break;
+      }
     }
+    return state;
   }
 
   #currentFileState(context: LineContext): FileEvaluationState {
@@ -107,9 +137,7 @@ export class Interpreter {
 
   evaluateGOTO(statement: RefinedStatement<"GOTO">): void {
     const { label } = statement;
-    this.#currentFileState(statement).programCounter =
-      // Subtract one to account for bump after each statement in run()
-      label - 1;
+    this.#currentFileState(statement).programCounter = label;
   }
 
   evaluateCall(statement: RefinedStatement<"call">): void {

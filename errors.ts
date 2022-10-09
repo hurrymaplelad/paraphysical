@@ -64,4 +64,8 @@ export function invalidStatementError(
   return parsingError(`no ${inner} statements in ${outer}s`, context);
 }
 
+export function fileNotLoaded(filename: string): Error {
+  return new Error(`Cannot run "${filename}" - not loaded.`);
+}
+
 export function assertNever(_: never): void {}

@@ -9,6 +9,16 @@ function inlineExample(content: string): string {
   return content.split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
 }
 
+function* range(
+  { start, end, step }: { start?: number; end: number; step?: number },
+): IterableIterator<number> {
+  start = start ?? 1;
+  step = step ?? 1;
+  for (let i = start; i < end; i++) {
+    yield i;
+  }
+}
+
 Deno.test("Interpreter", async (t) => {
   const context = { filename: "test", sourceLineNumber: NaN };
 
@@ -16,7 +26,7 @@ Deno.test("Interpreter", async (t) => {
     const interpreter = new Interpreter();
     const filename = "hello.ppcl";
     interpreter.load(filename, await readExampleText(filename));
-    interpreter.runOnce(filename);
+    interpreter.runOnceSync(filename);
 
     expect(interpreter.getLocal("OUT", context)).toEqual(1);
     expect(interpreter.getPoint("HELLO.WORLD", context)).toEqual(2);
@@ -29,7 +39,7 @@ Deno.test("Interpreter", async (t) => {
       001  X = 2 + 3 * 4
     `);
     interpreter.load(filename, content);
-    interpreter.runOnce(filename);
+    interpreter.runOnceSync(filename);
 
     expect(interpreter.getPoint("X", context)).toEqual(14);
   });
@@ -44,7 +54,7 @@ Deno.test("Interpreter", async (t) => {
       4 IF(Y) THEN X = 0 ELSE X = 2
     `);
     interpreter.load(filename, content);
-    interpreter.runOnce(filename);
+    interpreter.runOnceSync(filename);
 
     expect(interpreter.getPoint("X", context)).toEqual(2);
     expect(interpreter.getPoint("Y", context)).toEqual(0);
@@ -56,12 +66,13 @@ Deno.test("Interpreter", async (t) => {
     const content = inlineExample(`
       001  X = 0
       002  X = X + 1
-      003  C| This example only makes sense in our interpreter,
-      004  C| where we can run the program only once. 
-      100  IF(X.LT.3) THEN GOTO 2
+      003  C
+      100  IF(X.LT.3) THEN GOTO 2 ELSE GOTO 3
     `);
     interpreter.load(filename, content);
-    interpreter.runOnce(filename);
+    for (const _ of range({ end: 5 })) {
+      interpreter.runOnceSync(filename);
+    }
 
     expect(interpreter.getPoint("X", context)).toEqual(3);
   });
