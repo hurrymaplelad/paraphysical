@@ -16,7 +16,7 @@ Deno.test("Interpreter", async (t) => {
     const interpreter = new Interpreter();
     const filename = "hello.ppcl";
     interpreter.load(filename, await readExampleText(filename));
-    interpreter.run(filename);
+    interpreter.runOnce(filename);
 
     expect(interpreter.getLocal("OUT", context)).toEqual(1);
     expect(interpreter.getPoint("HELLO.WORLD", context)).toEqual(2);
@@ -29,7 +29,7 @@ Deno.test("Interpreter", async (t) => {
       001  X = 2 + 3 * 4
     `);
     interpreter.load(filename, content);
-    interpreter.run(filename);
+    interpreter.runOnce(filename);
 
     expect(interpreter.getPoint("X", context)).toEqual(14);
   });
@@ -44,7 +44,7 @@ Deno.test("Interpreter", async (t) => {
       4 IF(Y) THEN X = 0 ELSE X = 2
     `);
     interpreter.load(filename, content);
-    interpreter.run(filename);
+    interpreter.runOnce(filename);
 
     expect(interpreter.getPoint("X", context)).toEqual(2);
     expect(interpreter.getPoint("Y", context)).toEqual(0);
@@ -61,7 +61,7 @@ Deno.test("Interpreter", async (t) => {
       100  IF(X.LT.3) THEN GOTO 2
     `);
     interpreter.load(filename, content);
-    interpreter.run(filename);
+    interpreter.runOnce(filename);
 
     expect(interpreter.getPoint("X", context)).toEqual(3);
   });

@@ -33,7 +33,7 @@ export class Interpreter {
     this.#files.set(filename, [parsedFile, state]);
   }
 
-  run(filename: string): void {
+  runOnce(filename: string): void {
     const record = this.#files.get(filename);
     if (record == null) {
       throw new Error(`Cannot run "${filename}" - not loaded.`);
