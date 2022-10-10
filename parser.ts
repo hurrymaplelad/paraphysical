@@ -43,6 +43,14 @@ export type Statement = Readonly<
       destinationLabel: number;
     }
     | {
+      type: "GOSUB";
+      destinationLabel: number;
+      args: ReadonlyArray<RefinedExpression<"reference">>;
+    }
+    | {
+      type: "RETURN";
+    }
+    | {
       type: "SAMPLE";
       secondsPerSample: number;
       sampledStatement: Statement;
@@ -142,6 +150,11 @@ export function parseStatement(
       return parseConditional(tokens, context);
     case "GOTO":
       return parseGOTO(tokens, context);
+    case "GOSUB":
+      return parseGOSUB(tokens, context);
+    case "RETURN":
+      tokens.skip(1);
+      return { ...context, type: "RETURN" };
     case "name":
       switch (second?.type) {
         case "(": {
@@ -286,6 +299,41 @@ export function parseGOTO(
     ...context,
     type: "GOTO",
     destinationLabel: label,
+  };
+}
+
+export const MAX_GOSUB_ARG_COUNT = 15;
+
+export function parseGOSUB(
+  tokens: Tokens,
+  context: StatementContext,
+): Statement {
+  consumeExpected(tokens, "GOSUB", context);
+  const { number: label } = consumeExpected(tokens, "number", context);
+  if (!LineLabelNumber.isValid(label)) {
+    throw parsingError(
+      `Invalid GOSUB: ${label}. Line number must be ${LineLabelNumber.description}`,
+      context,
+    );
+  }
+  const args = [];
+  while (!tokens.isDone() && tokens.peek()?.type === "name") {
+    if (args.length >= MAX_GOSUB_ARG_COUNT) {
+      throw parsingError(
+        `GOSUB supports at most ${MAX_GOSUB_ARG_COUNT} arguments`,
+        context,
+      );
+    }
+    args.push(parseReference(tokens, context));
+    if (tokens.peek()?.type === ",") {
+      tokens.skip(1);
+    }
+  }
+  return {
+    ...context,
+    type: "GOSUB",
+    destinationLabel: label,
+    args,
   };
 }
 

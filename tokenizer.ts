@@ -3,7 +3,14 @@ import { LineContext, parsingError } from "./errors.ts";
 export const SYMBOLS = ["(", ")", ",", "="] as const;
 export type SymbolsType = typeof SYMBOLS[number];
 
-export const KEYWORDS = ["IF", "THEN", "ELSE", "GOTO"] as const;
+export const KEYWORDS = [
+  "IF",
+  "THEN",
+  "ELSE",
+  "GOTO",
+  "GOSUB",
+  "RETURN",
+] as const;
 export type KeywordsType = typeof KEYWORDS[number];
 export const KeywordSet: Set<string> = new Set(KEYWORDS);
 
@@ -87,7 +94,7 @@ const tokenizers: ReadonlyArray<
     }),
   },
   {
-    regex: /[A-Za-z][A-Za-z0-9]*/y,
+    regex: /\$?[A-Za-z][A-Za-z0-9]*/y,
     tokenize: (match) => {
       const name = match[0];
       return KeywordSet.has(name)

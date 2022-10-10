@@ -16,11 +16,13 @@ import {
 } from "./parser.ts";
 
 const LOCAL_DELIMITER = ":" as const;
+const MAX_GOSUB_STACK_DEPTH = 8;
 
 type FileEvaluationState = {
   readonly locals: Map<string, number>;
   readonly statementStates: Map<number, StatementState>;
   programCounter: number;
+  gosubStack: number[];
   timestampAtStartOfLatestRun: number;
 };
 
@@ -65,6 +67,7 @@ export class Interpreter {
       locals: new Map(),
       statementStates: new Map(),
       programCounter: 0,
+      gosubStack: [],
       timestampAtStartOfLatestRun: NaN,
     };
     this.#files.set(filename, [parsedFile, state]);
@@ -146,6 +149,10 @@ export class Interpreter {
         return this.evaluateConditional(statement);
       case "GOTO":
         return this.evaluateGOTO(statement);
+      case "GOSUB":
+        return this.evaluateGOSUB(statement);
+      case "RETURN":
+        return this.evaluateRETURN(statement);
       case "SAMPLE":
         return this.evaluateSAMPLE(statement);
       default:
@@ -184,6 +191,39 @@ export class Interpreter {
   evaluateGOTO(statement: RefinedStatement<"GOTO">): void {
     const { destinationLabel } = statement;
     this.#currentFileState(statement).programCounter = destinationLabel;
+  }
+
+  evaluateGOSUB(statement: RefinedStatement<"GOSUB">): void {
+    const fileState = this.#currentFileState(statement);
+    const { args, destinationLabel } = statement;
+    if (fileState.gosubStack.length >= MAX_GOSUB_STACK_DEPTH) {
+      throw runtimeError(
+        `Maximum of ${MAX_GOSUB_STACK_DEPTH} nested GOSUB calls exceeded`,
+        statement,
+      );
+    }
+    fileState.gosubStack.push(statement.label);
+    for (const [index, arg] of args.entries()) {
+      const argValue = this.evaluateExpression(arg, statement);
+      // Avoid setLocal() to bypass declaration check
+      this.#currentFileState(statement).locals.set(
+        "ARG" + (index + 1),
+        argValue,
+      );
+    }
+    fileState.programCounter = destinationLabel;
+  }
+
+  evaluateRETURN(statement: RefinedStatement<"RETURN">): void {
+    const fileState = this.#currentFileState(statement);
+    const callsiteLabel = fileState.gosubStack.pop();
+    if (callsiteLabel == undefined) {
+      throw runtimeError(
+        "RETURN outside GOSUB",
+        statement,
+      );
+    }
+    fileState.programCounter = callsiteLabel + 1;
   }
 
   evaluateSAMPLE(statement: RefinedStatement<"SAMPLE">): void {
@@ -248,7 +288,7 @@ export class Interpreter {
     const [filename, name] = this.#keyLocal(nameOrKey, context);
 
     const value = this.#files.get(filename)?.[1].locals.get(name);
-    if (value == null) {
+    if (value === undefined) {
       throw runtimeError(
         `attempted to read undeclared LOCAL: ${nameOrKey}`,
         context,

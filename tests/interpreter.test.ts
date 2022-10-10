@@ -69,6 +69,31 @@ Deno.test("Interpreter", async (t) => {
     expect(interpreter.getPoint("X", context)).toEqual(3);
   });
 
+  await t.step("GOSUB", () => {
+    const interpreter = new Interpreter();
+    const filename = "gosub.ppcl";
+    const content = inlineExample(`
+      001  C == Main Loop ==  
+      002  X = 1
+      003  GOSUB 111 X
+      004  GOTO 200
+      005  C
+      100  C == Subroutines ==
+      110  C -- Sub 1 --
+      111  X = X + $ARG1
+      112  GOSUB 121 $ARG1 X
+      113  RETURN
+      120  C -- Sub 2 --
+      121  X = X + $ARG2
+      122  RETURN
+      200  GOTO 1
+    `);
+    interpreter.load(filename, content);
+    interpreter.runOnceSync(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(4);
+  });
+
   await t.step("SAMPLE", () => {
     const clock = new ManualClock();
     const interpreter = new Interpreter({ clock });
