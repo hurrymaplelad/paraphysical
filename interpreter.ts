@@ -19,7 +19,31 @@ const LOCAL_DELIMITER = ":" as const;
 
 type FileEvaluationState = {
   readonly locals: Map<string, number>;
+  readonly statementStates: Map<number, StatementState>;
   programCounter: number;
+  timestampAtStartOfLatestRun: number;
+};
+
+type StatementState = {
+  readonly type: "SAMPLE";
+  lastRunTimestamp: number;
+};
+
+type RefinedStatementState<Type extends StatementState["type"]> = Extract<
+  StatementState,
+  Record<"type", Type>
+>;
+
+const DEFAULT_STATEMENT_STATES: {
+  [P in StatementState["type"]]: () => Extract<
+    StatementState,
+    { type: P }
+  >;
+} = {
+  SAMPLE: () => ({
+    type: "SAMPLE",
+    lastRunTimestamp: NaN,
+  }),
 };
 
 export class Interpreter {
@@ -39,7 +63,9 @@ export class Interpreter {
     const parsedFile = parseFile(contents, { filename });
     const state = {
       locals: new Map(),
+      statementStates: new Map(),
       programCounter: 0,
+      timestampAtStartOfLatestRun: NaN,
     };
     this.#files.set(filename, [parsedFile, state]);
   }
@@ -61,6 +87,7 @@ export class Interpreter {
     }
     const [{ statements, maxLabel }, state] = record;
     this.#currentFilename = filename;
+    state.timestampAtStartOfLatestRun = this.clock.getTimestamp();
 
     while (state.programCounter <= maxLabel) {
       const statement = statements.get(state.programCounter);
@@ -90,6 +117,23 @@ export class Interpreter {
     return record[1];
   }
 
+  #statementState<
+    S extends Extract<Statement, { type: StatementState["type"] }>,
+  >(
+    statement: S,
+  ): RefinedStatementState<S["type"]> {
+    const { statementStates } = this.#currentFileState(statement);
+    const { label } = statement;
+
+    if (statementStates.has(label)) {
+      return statementStates.get(label) as RefinedStatementState<S["type"]>;
+    } else {
+      const state = DEFAULT_STATEMENT_STATES[statement.type]();
+      statementStates.set(label, state);
+      return state as RefinedStatementState<S["type"]>;
+    }
+  }
+
   evaluateStatement(statement: Statement) {
     switch (statement.type) {
       case "assignment":
@@ -102,6 +146,8 @@ export class Interpreter {
         return this.evaluateConditional(statement);
       case "GOTO":
         return this.evaluateGOTO(statement);
+      case "SAMPLE":
+        return this.evaluateSAMPLE(statement);
       default:
         // Enforce exhaustiveness
         assertNever(statement);
@@ -136,8 +182,24 @@ export class Interpreter {
   }
 
   evaluateGOTO(statement: RefinedStatement<"GOTO">): void {
-    const { label } = statement;
-    this.#currentFileState(statement).programCounter = label;
+    const { destinationLabel } = statement;
+    this.#currentFileState(statement).programCounter = destinationLabel;
+  }
+
+  evaluateSAMPLE(statement: RefinedStatement<"SAMPLE">): void {
+    const { sampledStatement, secondsPerSample } = statement;
+    const fileState = this.#currentFileState(statement);
+    const statementState = this.#statementState(statement);
+    const { lastRunTimestamp } = statementState;
+    const currentTime = fileState.timestampAtStartOfLatestRun;
+
+    if (
+      isNaN(lastRunTimestamp) ||
+      currentTime - lastRunTimestamp >= secondsPerSample
+    ) {
+      statementState.lastRunTimestamp = currentTime;
+      this.evaluateStatement(sampledStatement);
+    }
   }
 
   evaluateCall(statement: RefinedStatement<"call">): void {

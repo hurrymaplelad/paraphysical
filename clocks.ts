@@ -37,3 +37,31 @@ export class SystemClock implements Clock {
     return elapsedTime;
   }
 }
+
+export class ManualClock implements Clock {
+  #lapStartTimestamp: number;
+  #timestamp: number;
+
+  constructor(
+    options: { initialTimestamp?: number } | null = null,
+  ) {
+    const initialTimestamp = options?.initialTimestamp ?? 0;
+    this.#timestamp = initialTimestamp;
+    this.#lapStartTimestamp = initialTimestamp;
+  }
+
+  tick(seconds: number): void {
+    this.#timestamp += seconds;
+  }
+
+  getTimestamp(): number {
+    return this.#timestamp;
+  }
+
+  lap(): number {
+    const timestamp = this.getTimestamp();
+    const elapsedTime = timestamp - this.#lapStartTimestamp;
+    this.#lapStartTimestamp = timestamp;
+    return elapsedTime;
+  }
+}

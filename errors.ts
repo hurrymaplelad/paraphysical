@@ -61,7 +61,7 @@ export function invalidStatementError(
   >,
   context: LineContext,
 ): Error {
-  return parsingError(`no ${inner} statements in ${outer}s`, context);
+  return parsingError(`no ${inner} statements inside ${outer}s`, context);
 }
 
 export function fileNotLoaded(filename: string): Error {

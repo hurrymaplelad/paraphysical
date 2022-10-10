@@ -5,9 +5,8 @@ import {
   parsingError,
   unexpectedTokenError,
 } from "./errors.ts";
+import { LineLabelNumber, PositiveInt16 } from "./numbers.ts";
 import { InfixBinaryOperatorType, Token, tokenizeLine } from "./tokenizer.ts";
-
-const MAX_LINE_LABEL = 32767;
 
 export type StatementContext = Readonly<
   LineContext & {
@@ -41,10 +40,19 @@ export type Statement = Readonly<
     }
     | {
       type: "GOTO";
-      label: number;
+      destinationLabel: number;
+    }
+    | {
+      type: "SAMPLE";
+      secondsPerSample: number;
+      sampledStatement: Statement;
     }
   )
 >;
+
+const TIMED_STATEMENTS: Set<Statement["type"]> = new Set([
+  "SAMPLE",
+]);
 
 // Union refinement: https://engineering.widen.com/blog/Demystifying-TypeScripts-Extract-Type/
 export type RefinedStatement<Type extends Statement["type"]> = Extract<
@@ -82,7 +90,7 @@ export function parseLine(
   // Line label
   const labelMatch = /^([0-9]{1,5})\s+(.*)$/.exec(line);
   const labelError = parsingError(
-    `Line must start with number between 1 and ${MAX_LINE_LABEL}`,
+    `Line must start with ${LineLabelNumber.description}`,
     context,
   );
   if (labelMatch == null) {
@@ -90,7 +98,7 @@ export function parseLine(
   }
   const [_, labelString, rest] = labelMatch;
   const label = parseInt(labelString, 10);
-  if (label === 0 || label > MAX_LINE_LABEL) {
+  if (!LineLabelNumber.isValid(label)) {
     throw labelError;
   }
 
@@ -136,8 +144,13 @@ export function parseStatement(
       return parseGOTO(tokens, context);
     case "name":
       switch (second?.type) {
-        case "(":
+        case "(": {
+          switch (first.name) {
+            case "SAMPLE":
+              return parseSAMPLE(tokens, context);
+          }
           return parseCall(tokens, context);
+        }
         case "=":
           return parseAssignment(tokens, context);
       }
@@ -148,6 +161,39 @@ export function parseStatement(
 //
 // Statement Parsers
 //
+
+export function parseSAMPLE(
+  tokens: Tokens,
+  context: StatementContext,
+): Statement {
+  consumeExpected(tokens, "name", context);
+  consumeExpected(tokens, "(", context);
+  const { number: secondsPerSample } = consumeExpected(
+    tokens,
+    "number",
+    context,
+  );
+  if (!PositiveInt16.isValid(secondsPerSample)) {
+    throw parsingError(
+      `SAMPLE seconds must be ${PositiveInt16.description}. Got ${secondsPerSample}`,
+      context,
+    );
+  }
+  consumeExpected(tokens, ")", context);
+  const sampledStatement = parseStatement(tokens, context);
+  if (TIMED_STATEMENTS.has(sampledStatement.type)) {
+    throw invalidStatementError(
+      { outer: "SAMPLE", inner: sampledStatement.type },
+      context,
+    );
+  }
+  return {
+    ...context,
+    type: "SAMPLE",
+    secondsPerSample,
+    sampledStatement,
+  };
+}
 
 export function parseConditional(
   tokens: Tokens,
@@ -177,6 +223,7 @@ export function parseConditional(
 
 const FORBIDDEN_CONDITIONAL_SUB_STATEMENTS: Set<Statement["type"]> = new Set([
   "conditional",
+  ...TIMED_STATEMENTS.values(),
 ]);
 
 function validateConditionalSubStatement(
@@ -229,16 +276,16 @@ export function parseGOTO(
 ): Statement {
   consumeExpected(tokens, "GOTO", context);
   const { number: label } = consumeExpected(tokens, "number", context);
-  if (!Number.isInteger(label) || label < 1 || label > MAX_LINE_LABEL) {
+  if (!LineLabelNumber.isValid(label)) {
     throw parsingError(
-      `Invalid GOTO: ${label}. Line number must be an integer between 1 and ${MAX_LINE_LABEL}`,
+      `Invalid GOTO: ${label}. Line number must be ${LineLabelNumber.description}`,
       context,
     );
   }
   return {
     ...context,
     type: "GOTO",
-    label,
+    destinationLabel: label,
   };
 }
 

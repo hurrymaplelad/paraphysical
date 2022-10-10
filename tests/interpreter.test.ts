@@ -1,5 +1,7 @@
 import { Interpreter } from "../interpreter.ts";
 import { expect } from "https://deno.land/x/expect@v0.2.10/mod.ts";
+import { ManualClock } from "../clocks.ts";
+import { range } from "../numbers.ts";
 
 async function readExampleText(filename: string): Promise<string> {
   return await Deno.readTextFile(`examples/${filename}`);
@@ -7,16 +9,6 @@ async function readExampleText(filename: string): Promise<string> {
 
 function inlineExample(content: string): string {
   return content.split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
-}
-
-function* range(
-  { start, end, step }: { start?: number; end: number; step?: number },
-): IterableIterator<number> {
-  start = start ?? 1;
-  step = step ?? 1;
-  for (let i = start; i < end; i++) {
-    yield i;
-  }
 }
 
 Deno.test("Interpreter", async (t) => {
@@ -74,6 +66,25 @@ Deno.test("Interpreter", async (t) => {
       interpreter.runOnceSync(filename);
     }
 
+    expect(interpreter.getPoint("X", context)).toEqual(3);
+  });
+
+  await t.step("SAMPLE", () => {
+    const clock = new ManualClock();
+    const interpreter = new Interpreter({ clock });
+    const filename = "sample.ppcl";
+    const content = inlineExample(`
+      001  X = 0
+      002  SAMPLE(3) X = X + 1
+      003  GOTO 2
+    `);
+    interpreter.load(filename, content);
+    for (const _ of range({ end: 8 })) {
+      interpreter.runOnceSync(filename);
+      clock.tick(1);
+    }
+
+    // Should increment on run 1, 4, and 7
     expect(interpreter.getPoint("X", context)).toEqual(3);
   });
 });
