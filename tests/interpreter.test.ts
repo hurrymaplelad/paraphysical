@@ -73,7 +73,7 @@ Deno.test("Interpreter", async (t) => {
     const interpreter = new Interpreter();
     const filename = "gosub.ppcl";
     const content = inlineExample(`
-      001  C == Main Loop ==  
+      001  C == Main Loop ==
       002  X = 1
       003  GOSUB 111 X
       004  GOTO 200
@@ -111,5 +111,22 @@ Deno.test("Interpreter", async (t) => {
 
     // Should increment on run 1, 4, and 7
     expect(interpreter.getPoint("X", context)).toEqual(3);
+  });
+
+  await t.step("ENABLE/ACT, DISABLE/DEACT", () => {
+    const interpreter = new Interpreter();
+    const filename = "enable.ppcl";
+    const content = inlineExample(`
+      001  X = 0
+      002  DISABLE(4)
+      003  ENABLE(4)
+      004  X = 2
+      005  DISABLE(6)
+      006  X = 3
+    `);
+    interpreter.load(filename, content);
+    interpreter.runOnceSync(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(2);
   });
 });

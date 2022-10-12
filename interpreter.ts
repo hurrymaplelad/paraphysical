@@ -14,15 +14,19 @@ import {
   RefinedStatement,
   Statement,
 } from "./parser.ts";
+import {
+  LineLabelNumber
+} from "./numbers.ts";
 
 const LOCAL_DELIMITER = ":" as const;
 const MAX_GOSUB_STACK_DEPTH = 8;
 
 type FileEvaluationState = {
-  readonly locals: Map<string, number>;
-  readonly statementStates: Map<number, StatementState>;
-  programCounter: number;
+  disabledLines: Set<number>;
   gosubStack: number[];
+  readonly locals: Map<string, number>;
+  programCounter: number;
+  readonly statementStates: Map<number, StatementState>;
   timestampAtStartOfLatestRun: number;
 };
 
@@ -64,10 +68,11 @@ export class Interpreter {
   load(filename: string, contents: string): void {
     const parsedFile = parseFile(contents, { filename });
     const state = {
-      locals: new Map(),
-      statementStates: new Map(),
-      programCounter: 0,
+      disabledLines: new Set<number>(),
       gosubStack: [],
+      locals: new Map(),
+      programCounter: 0,
+      statementStates: new Map(),
       timestampAtStartOfLatestRun: NaN,
     };
     this.#files.set(filename, [parsedFile, state]);
@@ -100,7 +105,7 @@ export class Interpreter {
       // if (statement != null) {
       //   console.log("evaluating", statement.label, statement.type);
       // }
-      if (statement != null) {
+      if (statement != null && !state.disabledLines.has(statement.label)) {
         this.evaluateStatement(statement);
       }
       // Check if we reached the end of the file, which triggers
@@ -122,8 +127,8 @@ export class Interpreter {
 
   #statementState<
     S extends Extract<Statement, { type: StatementState["type"] }>,
-  >(
-    statement: S,
+    >(
+      statement: S,
   ): RefinedStatementState<S["type"]> {
     const { statementStates } = this.#currentFileState(statement);
     const { label } = statement;
@@ -247,6 +252,13 @@ export class Interpreter {
     switch (functionName.toUpperCase()) {
       case "LOCAL":
         return this.evaluateLOCAL(args, statement);
+
+      case "ENABLE":
+      case "ACT":
+        return this.evaluateENABLE(args, statement);
+      case "DISABLE":
+      case "DEACT":
+        return this.evaluateDISABLE(args, statement);
     }
     throw runtimeError(`unrecognized function: ${functionName}`, statement);
   }
@@ -265,6 +277,26 @@ export class Interpreter {
         throw runtimeError(`attemped to re-declare LOCAL: ${name}`, context);
       }
       this.#currentFileState(context).locals.set(name, 0);
+    }
+  }
+
+  evaluateENABLE(args: readonly Expression[], context: LineContext): void {
+    for (const arg of args) {
+      if (arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)) {
+        throw runtimeError(`ENABLE/ACT arg must be ${LineLabelNumber.description}`, context);
+      }
+      const lineLabel = arg.token.number;
+      this.#currentFileState(context).disabledLines.delete(lineLabel);
+    }
+  }
+
+  evaluateDISABLE(args: readonly Expression[], context: LineContext): void {
+    for (const arg of args) {
+      if (arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)) {
+        throw runtimeError(`DISABLE/DEACT arg must be ${LineLabelNumber.description}`, context);
+      }
+      const lineLabel = arg.token.number;
+      this.#currentFileState(context).disabledLines.add(lineLabel);
     }
   }
 
@@ -376,7 +408,7 @@ export class Interpreter {
       case ".ROOT.":
         return Math.pow(lhsValue, 1 / rhsValue());
 
-        // Comparison
+      // Comparison
       case ".EQ.":
         return Number(lhsValue === rhsValue());
       case ".NE.":
