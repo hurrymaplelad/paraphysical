@@ -147,7 +147,7 @@ export class Interpreter {
       case "assignment":
         return this.evaluateAssignment(statement);
       case "call":
-        return this.evaluateCall(statement);
+        return this.evaluateCallStatement(statement);
       case "comment":
         return;
       case "conditional":
@@ -247,8 +247,9 @@ export class Interpreter {
     }
   }
 
-  evaluateCall(statement: RefinedStatement<"call">): void {
+  evaluateCallStatement(statement: RefinedStatement<"call">): void {
     const { functionName, args } = statement;
+
     switch (functionName.toUpperCase()) {
       case "LOCAL":
         return this.evaluateLOCAL(args, statement);
@@ -359,6 +360,8 @@ export class Interpreter {
         return this.evaluateReferenceExpression(expression, context);
       case "ibop":
         return this.evaluateInfixBinaryOperation(expression, context);
+      case "call":
+        return this.evaluateCallExpression(expression, context);
     }
   }
 
@@ -440,5 +443,32 @@ export class Interpreter {
           context,
         );
     }
+  }
+
+  evaluateCallExpression(
+    expression: RefinedExpression<"call">,
+    context: LineContext,
+  ): number {
+    const { functionName, arg } = expression;
+    const argValue = this.evaluateExpression(arg, context);
+    switch (functionName) {
+      case "ATN":
+        return Math.atan(argValue);
+      case "COM":
+        return 1 - (argValue ? 1 : 0);
+      case "COS":
+        return Math.cos(argValue);
+      case "EXP":
+        return Math.exp(argValue);
+      case "LOG":
+        return Math.log(argValue);
+      case "SIN":
+        return Math.sin(argValue);
+      case "SQRT":
+        return Math.sqrt(argValue);
+      case "TAN":
+        return Math.tan(argValue);
+    }
+    throw runtimeError(`unrecognized function: ${functionName}`, context);
   }
 }

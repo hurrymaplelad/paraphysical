@@ -36,6 +36,18 @@ Deno.test("Interpreter", async (t) => {
     expect(interpreter.getPoint("X", context)).toEqual(14);
   });
 
+  await t.step("Arithmetic Functions", () => {
+    const interpreter = new Interpreter();
+    const filename = "arithmetic.ppcl";
+    const content = inlineExample(`
+      001  X = SQRT(4)
+    `);
+    interpreter.load(filename, content);
+    interpreter.runOnceSync(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(2);
+  });
+
   await t.step("Conditionals", () => {
     const interpreter = new Interpreter();
     const filename = "conditional.ppcl";

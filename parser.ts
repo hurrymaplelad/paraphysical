@@ -162,7 +162,7 @@ export function parseStatement(
             case "SAMPLE":
               return parseSAMPLE(tokens, context);
           }
-          return parseCall(tokens, context);
+          return parseCallStatement(tokens, context);
         }
         case "=":
           return parseAssignment(tokens, context);
@@ -251,7 +251,7 @@ function validateConditionalSubStatement(
   }
 }
 
-export function parseCall(
+export function parseCallStatement(
   tokens: Tokens,
   context: StatementContext,
 ): Statement {
@@ -356,6 +356,11 @@ export type Expression = Readonly<
     lhs: Expression;
     rhs: Expression;
   }
+  | {
+    type: "call";
+    functionName: string;
+    arg: Expression;
+  }
 >;
 
 // Union refinement: https://engineering.widen.com/blog/Demystifying-TypeScripts-Extract-Type/
@@ -388,7 +393,11 @@ function parseExpressionLHS(tokens: Tokens, context: LineContext): Expression {
   const first = tokens.peek();
   switch (first?.type) {
     case "name":
-      return parseReference(tokens, context);
+      if (tokens.peek(1)?.type === "(") {
+        return parseCallExpression(tokens, context);
+      } else {
+        return parseReference(tokens, context);
+      }
     case "number":
       return parseLiteral(tokens, context);
     case "(": {
@@ -419,6 +428,21 @@ function parseExpressionRHS(
     return parseExpression(tokens, context);
   } else {
     return parseExpressionLHS(tokens, context);
+  }
+}
+
+export function parseCallExpression(
+  tokens: Tokens,
+  context: LineContext,
+): Expression {
+  const functionNameToken = consumeExpected(tokens, "name", context);
+  consumeExpected(tokens, "(", context);
+  const arg = parseExpression(tokens, context);
+  consumeExpected(tokens, ")", context);
+  return {
+    type: "call",
+    functionName: functionNameToken.name,
+    arg,
   }
 }
 
