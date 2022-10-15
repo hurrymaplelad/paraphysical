@@ -1,44 +1,5 @@
 import { LineContext, parsingError } from "./errors.ts";
-
-export const SYMBOLS = ["(", ")", ",", "="] as const;
-export type SymbolsType = typeof SYMBOLS[number];
-
-export const KEYWORDS = [
-  "IF",
-  "THEN",
-  "ELSE",
-  "GOTO",
-  "GOSUB",
-  "RETURN",
-] as const;
-export type KeywordsType = typeof KEYWORDS[number];
-export const KeywordSet: Set<string> = new Set(KEYWORDS);
-
-// Values are precedence, lower wins
-export const INFIX_BINARY_OPERATORS = {
-  // 3
-  ".ROOT.": 3,
-  // 4
-  "*": 4,
-  "/": 4,
-  // 5
-  "+": 5,
-  "-": 5,
-  // 6
-  ".EQ.": 6,
-  ".NE.": 6,
-  ".GT.": 6,
-  ".GE.": 6,
-  ".LT.": 6,
-  ".LE.": 6,
-  // 7
-  ".AND.": 7,
-  ".NAND.": 7,
-  // 8
-  ".OR.": 8,
-  ".XOR.": 8,
-} as const;
-export type InfixBinaryOperatorType = keyof typeof INFIX_BINARY_OPERATORS;
+import { InfixBinaryOperatorType, INFIX_BINARY_OPERATORS, KeywordSet, KeywordsType, SYMBOLS, SymbolsType } from "./reserved.ts";
 
 export type Token = Readonly<
   | {
@@ -64,57 +25,57 @@ const tokenizers: ReadonlyArray<
     tokenize: (match: RegExpExecArray) => Token;
   }>
 > = [
-  {
-    regex: new RegExp(`[\\${SYMBOLS.join("\\")}]`, "y"),
-    tokenize: (match) => ({
-      type: match[0] as SymbolsType,
-    }),
-  },
-  {
-    regex: new RegExp(
-      Object.keys(INFIX_BINARY_OPERATORS)
-        .map((op) => op.length === 1 ? `\\${op}` : op.replace(".", "\\."))
-        .join("|"),
-      "y",
-    ),
-    tokenize: (match) => {
-      const op = match[0] as InfixBinaryOperatorType;
-      return {
-        type: "ibop",
-        operator: op,
-        precedence: INFIX_BINARY_OPERATORS[op],
-      };
+    {
+      regex: new RegExp(`[\\${SYMBOLS.join("\\")}]`, "y"),
+      tokenize: (match) => ({
+        type: match[0] as SymbolsType,
+      }),
     },
-  },
-  {
-    regex: /[0-9]+(\.[0-9]+)?/y,
-    tokenize: (match) => ({
-      type: "number",
-      number: Number(match[0]),
-    }),
-  },
-  {
-    regex: /\$?[A-Za-z][A-Za-z0-9]*/y,
-    tokenize: (match) => {
-      const name = match[0];
-      return KeywordSet.has(name)
-        ? {
-          type: name as KeywordsType,
-        }
-        : {
-          type: "name",
-          name,
+    {
+      regex: new RegExp(
+        Object.keys(INFIX_BINARY_OPERATORS)
+          .map((op) => op.length === 1 ? `\\${op}` : op.replace(".", "\\."))
+          .join("|"),
+        "y",
+      ),
+      tokenize: (match) => {
+        const op = match[0] as InfixBinaryOperatorType;
+        return {
+          type: "ibop",
+          operator: op,
+          precedence: INFIX_BINARY_OPERATORS[op],
         };
+      },
     },
-  },
-  {
-    regex: /"([A-Za-z0-9:$ .,_'-]+)"/y,
-    tokenize: (match) => ({
-      type: "name",
-      name: match[1],
-    }),
-  },
-];
+    {
+      regex: /[0-9]+(\.[0-9]+)?/y,
+      tokenize: (match) => ({
+        type: "number",
+        number: Number(match[0]),
+      }),
+    },
+    {
+      regex: /\$?[A-Za-z][A-Za-z0-9]*/y,
+      tokenize: (match) => {
+        const name = match[0];
+        return KeywordSet.has(name)
+          ? {
+            type: name as KeywordsType,
+          }
+          : {
+            type: "name",
+            name,
+          };
+      },
+    },
+    {
+      regex: /"([A-Za-z0-9:$ .,_'-]+)"/y,
+      tokenize: (match) => ({
+        type: "name",
+        name: match[1],
+      }),
+    },
+  ];
 const whitespaceRegex = /\s+/y;
 
 export function tokenizeLine(

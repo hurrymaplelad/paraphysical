@@ -141,4 +141,16 @@ Deno.test("Interpreter", async (t) => {
 
     expect(interpreter.getPoint("X", context)).toEqual(2);
   });
+
+  await t.step("Resident Points and Status Names", () => {
+    const interpreter = new Interpreter();
+    const filename = "enable.ppcl";
+    const content = inlineExample(`
+      001  IF ($BATT.EQ.DEAD) THEN X = 0 ELSE X = 1
+    `);
+    interpreter.load(filename, content);
+    interpreter.runOnceSync(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(1);
+  });
 });

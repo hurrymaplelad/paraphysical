@@ -6,7 +6,8 @@ import {
   unexpectedTokenError,
 } from "./errors.ts";
 import { LineLabelNumber, PositiveInt16 } from "./numbers.ts";
-import { InfixBinaryOperatorType, Token, tokenizeLine } from "./tokenizer.ts";
+import { InfixBinaryOperatorType, ResidentPointSet, StatusNameType, STATUS_NAMES } from "./reserved.ts";
+import { Token, tokenizeLine } from "./tokenizer.ts";
 
 export type StatementContext = Readonly<
   LineContext & {
@@ -480,6 +481,11 @@ export type ReferenceIdentifier = Readonly<
   | {
     type: "point";
     name: string;
+    resident: boolean
+  }
+  | {
+    type: "status";
+    name: StatusNameType;
   }
 >;
 
@@ -487,7 +493,14 @@ export function parseReferenceIdentifier(
   identifier: string,
   _context: LineContext,
 ): ReferenceIdentifier {
-  if (identifier.startsWith("$")) {
+  if (identifier in STATUS_NAMES) {
+    return {
+      type: "status",
+      name: identifier as StatusNameType,
+    }
+  }
+  const isResidentPoint = (ResidentPointSet as Set<string>).has(identifier);
+  if (!isResidentPoint && identifier.startsWith("$")) {
     return {
       type: "local",
       keyOrName: identifier.slice(1),
@@ -496,6 +509,7 @@ export function parseReferenceIdentifier(
   return {
     type: "point",
     name: identifier,
+    resident: isResidentPoint,
   };
 }
 

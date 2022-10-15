@@ -17,6 +17,7 @@ import {
 import {
   LineLabelNumber
 } from "./numbers.ts";
+import { ResidentPointNameType, STATUS_NAMES } from "./reserved.ts";
 
 const LOCAL_DELIMITER = ":" as const;
 const MAX_GOSUB_STACK_DEPTH = 8;
@@ -52,6 +53,12 @@ const DEFAULT_STATEMENT_STATES: {
   }),
 };
 
+const DEFAULT_RESIDENT_POINT_VALUES = {
+  "$BATT": STATUS_NAMES.OK,
+} as const;
+// Check that all resident points have defaults
+(_: ResidentPointNameType): keyof typeof DEFAULT_RESIDENT_POINT_VALUES  => _
+
 export class Interpreter {
   #files: Map<string, [ParsedFile, FileEvaluationState]>;
   // Key is filename:variablen. Use getLocal() / setLocal()
@@ -63,6 +70,11 @@ export class Interpreter {
     this.#files = new Map();
     this.#points = new Map();
     this.clock = options?.clock ?? new SystemClock();
+
+    // Initialize resident points
+    for (const [name, value] of Object.entries(DEFAULT_RESIDENT_POINT_VALUES)){
+      this.#points.set(name, value)
+    }
   }
 
   load(filename: string, contents: string): void {
@@ -188,7 +200,9 @@ export class Interpreter {
       case "local":
         return this.setLocal(dest.keyOrName, value, statement);
       case "point":
-        return this.setPoint(dest.name, value);
+        if(!dest.resident) {
+          return this.setPoint(dest.name, value);
+        }
     }
     throw runtimeError(`cannot assign to ${lhs.identifier}`, statement);
   }
@@ -389,6 +403,8 @@ export class Interpreter {
         return this.getLocal(id.keyOrName, context);
       case "point":
         return this.getPoint(id.name, context);
+      case "status":
+        return STATUS_NAMES[id.name];
     }
   }
 
