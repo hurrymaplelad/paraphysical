@@ -15,7 +15,11 @@ import {
   Statement,
 } from "./parser.ts";
 import { LineLabelNumber } from "./numbers.ts";
-import { ResidentPointNameType, STATUS_NAMES } from "./reserved.ts";
+import {
+  ResidentPointNameType,
+  SECONDS_COUNTER_REGEX,
+  STATUS_NAMES,
+} from "./reserved.ts";
 import { DateTime } from "./datetime.ts";
 
 const LOCAL_DELIMITER = ":" as const;
@@ -27,6 +31,7 @@ type FileEvaluationState = {
   readonly locals: Map<string, number>;
   programCounter: number;
   readonly statementStates: Map<number, StatementState>;
+  readonly secondsCounterAssignmentTimestamps: Map<string, number>;
   timestampAtStartOfLatestRun: number;
 };
 
@@ -89,6 +94,7 @@ export class Interpreter {
       programCounter: 0,
       statementStates: new Map(),
       timestampAtStartOfLatestRun: NaN,
+      secondsCounterAssignmentTimestamps: new Map(),
     };
     this.#files.set(filename, [parsedFile, state]);
   }
@@ -207,6 +213,9 @@ export class Interpreter {
       case "local":
         return this.setLocal(dest.keyOrName, value, statement);
       case "point":
+        if (SECONDS_COUNTER_REGEX.test(dest.name)) {
+          return this.setSecondsCounter(dest.name, value, statement);
+        }
         return this.setPoint(dest.name, value);
     }
     throw runtimeError(`cannot assign to ${lhs.identifier}`, statement);
@@ -381,6 +390,25 @@ export class Interpreter {
     this.#points.set(name, value);
   }
 
+  getSecondsCounter(name: string, context: LineContext): number {
+    const assignmentTime = this.#currentFileState(context)
+      .secondsCounterAssignmentTimestamps.get(name) ??
+      this.clock.initialTimestamp();
+    const assignedCount = this.#points.get(name) ?? 0;
+    return Math.floor(
+      this.clock.getTimestamp() - assignmentTime + assignedCount,
+    );
+  }
+
+  setSecondsCounter(name: string, value: number, context: LineContext): void {
+    const assignmentTime = this.clock.getTimestamp();
+    this.#currentFileState(context).secondsCounterAssignmentTimestamps.set(
+      name,
+      assignmentTime,
+    );
+    this.#points.set(name, value);
+  }
+
   getResidentPoint(name: ResidentPointNameType, content: LineContext): number {
     switch (name) {
       case "DAY":
@@ -432,6 +460,9 @@ export class Interpreter {
       case "local":
         return this.getLocal(id.keyOrName, context);
       case "point":
+        if (SECONDS_COUNTER_REGEX.test(id.name)) {
+          return this.getSecondsCounter(id.name, context);
+        }
         return this.getPoint(id.name, context);
       case "residentPoint":
         return this.getResidentPoint(id.name, context);

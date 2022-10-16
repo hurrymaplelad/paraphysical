@@ -4,6 +4,13 @@ export interface Clock {
    */
   getTimestamp(): number;
 
+  initialTimestamp(): number;
+
+  /**
+   * Seconds since the timer's initial time.
+   */
+  elapsedSeconds(): number;
+
   lap(): number;
 }
 
@@ -25,9 +32,17 @@ export class SystemClock implements Clock {
     this.#lapStartTimestamp = initialTimestamp;
   }
 
+  initialTimestamp(): number {
+    return this.#initialTimestamp;
+  }
+
   getTimestamp(): number {
     return this.#initialTimestamp +
       this.scale * (getSystemTimestamp() - this.#initialTimestamp);
+  }
+
+  elapsedSeconds(): number {
+    return this.getTimestamp() - this.#initialTimestamp;
   }
 
   lap(): number {
@@ -40,12 +55,14 @@ export class SystemClock implements Clock {
 
 export class ManualClock implements Clock {
   #lapStartTimestamp: number;
+  #initialTimestamp: number;
   #timestamp: number;
 
   constructor(
     options: { initialTimestamp?: number } | null = null,
   ) {
     const initialTimestamp = options?.initialTimestamp ?? 0;
+    this.#initialTimestamp = initialTimestamp;
     this.#timestamp = initialTimestamp;
     this.#lapStartTimestamp = initialTimestamp;
   }
@@ -56,6 +73,14 @@ export class ManualClock implements Clock {
 
   getTimestamp(): number {
     return this.#timestamp;
+  }
+
+  initialTimestamp(): number {
+    return this.#initialTimestamp;
+  }
+
+  elapsedSeconds(): number {
+    return this.#timestamp - this.#initialTimestamp;
   }
 
   lap(): number {

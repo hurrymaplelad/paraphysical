@@ -175,4 +175,25 @@ Deno.test("Interpreter", async (t) => {
     expect(interpreter.getPoint("W", context)).toEqual(6);
     expect(interpreter.getPoint("D", context)).toEqual(1);
   });
+
+  await t.step("Seconds Counters", () => {
+    // Sat Oct 1st @ 05:30am EDT
+    const clock = new ManualClock();
+    const interpreter = new Interpreter({ clock });
+    const filename = "seconds_counters.ppcl";
+    const content = inlineExample(`
+      001  SECNDS = 1
+      002  SECND2 = 2
+      003  X = SECNDS
+      004  Y = SECND2  
+      005  GOTO 3
+    `);
+    interpreter.load(filename, content);
+    interpreter.runOnceSync(filename);
+    clock.tick(2);
+    interpreter.runOnceSync(filename);
+
+    expect(interpreter.getPoint("X", context)).toEqual(3);
+    expect(interpreter.getPoint("Y", context)).toEqual(4);
+  });
 });

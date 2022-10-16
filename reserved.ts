@@ -49,6 +49,8 @@ export const RESIDENT_POINTS = [
 export type ResidentPointNameType = typeof RESIDENT_POINTS[number];
 export const ResidentPointSet = new Set(RESIDENT_POINTS);
 
+export const SECONDS_COUNTER_REGEX = /^SECND[S1-7]$/;
+
 export const STATUS_NAMES = {
   DEAD: 0,
   LOW: 50,
