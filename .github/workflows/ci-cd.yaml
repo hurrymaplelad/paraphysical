@@ -1,0 +1,17 @@
+name: Continuous Integration and Deployment
+on: [push]
+
+jobs:
+  build:
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - run: deno fmt --check
+      - run: deno test --allow-read
+      - uses: actions/setup-node@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+      - name: denoland/dnt
+        run: deno run -A ./scripts/build.ts ${GITHUB_REF/refs\/tags\//}
+        if: startsWith(github.ref, 'refs/tags/v')
