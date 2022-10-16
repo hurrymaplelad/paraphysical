@@ -21,4 +21,5 @@ See [DNT for details](https://github.com/denoland/dnt)
 
 ## Read More
 
+- PPCL Docs: https://github.com/mitchpaulus/vim-siemens-ppcl/blob/master/doc/ppcl.txt
 - Examples of good PPCL code: https://github.com/delphian/ppcl-library
