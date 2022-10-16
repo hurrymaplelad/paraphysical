@@ -111,9 +111,7 @@ export class Interpreter {
    * if the final statement was a GOTO, the programCounter will point
    * to the GOTO line if the file is run again.
    */
-  runOnceSync(
-    filename: string,
-  ): FileEvaluationState {
+  *runOnce(filename: string): Iterable<void> {
     const record = this.#files.get(filename);
     if (record == null) {
       throw fileNotLoaded(filename);
@@ -138,8 +136,16 @@ export class Interpreter {
       if (statement?.label === maxLabel) {
         break;
       }
+      yield;
     }
-    return state;
+  }
+
+  runOnceSync(
+    filename: string,
+  ): void {
+    for (const _ of this.runOnce(filename)) {
+      // consume line
+    }
   }
 
   #currentFileState(context: LineContext): FileEvaluationState {
