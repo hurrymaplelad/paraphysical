@@ -14,10 +14,9 @@ import {
   RefinedStatement,
   Statement,
 } from "./parser.ts";
-import {
-  LineLabelNumber
-} from "./numbers.ts";
+import { LineLabelNumber } from "./numbers.ts";
 import { ResidentPointNameType, STATUS_NAMES } from "./reserved.ts";
+import { DateTime } from "./datetime.ts";
 
 const LOCAL_DELIMITER = ":" as const;
 const MAX_GOSUB_STACK_DEPTH = 8;
@@ -56,8 +55,6 @@ const DEFAULT_STATEMENT_STATES: {
 const DEFAULT_RESIDENT_POINT_VALUES = {
   "$BATT": STATUS_NAMES.OK,
 } as const;
-// Check that all resident points have defaults
-(_: ResidentPointNameType): keyof typeof DEFAULT_RESIDENT_POINT_VALUES  => _
 
 export class Interpreter {
   #files: Map<string, [ParsedFile, FileEvaluationState]>;
@@ -65,15 +62,21 @@ export class Interpreter {
   #points: Map<string, number>;
   #currentFilename = "";
   readonly clock: Clock;
+  timezone = "America/Los_Angeles"; // IANA zone name
 
-  constructor(options: Readonly<{ clock?: Clock }> | null = null) {
+  constructor(
+    options: Readonly<{ clock?: Clock; timezone?: string }> | null = null,
+  ) {
     this.#files = new Map();
     this.#points = new Map();
     this.clock = options?.clock ?? new SystemClock();
+    if (options?.timezone != null) {
+      this.timezone = options.timezone;
+    }
 
     // Initialize resident points
-    for (const [name, value] of Object.entries(DEFAULT_RESIDENT_POINT_VALUES)){
-      this.#points.set(name, value)
+    for (const [name, value] of Object.entries(DEFAULT_RESIDENT_POINT_VALUES)) {
+      this.#points.set(name, value);
     }
   }
 
@@ -88,6 +91,10 @@ export class Interpreter {
       timestampAtStartOfLatestRun: NaN,
     };
     this.#files.set(filename, [parsedFile, state]);
+  }
+
+  dateTime(): DateTime {
+    return new DateTime(this.clock.getTimestamp(), this.timezone);
   }
 
   /**
@@ -139,8 +146,8 @@ export class Interpreter {
 
   #statementState<
     S extends Extract<Statement, { type: StatementState["type"] }>,
-    >(
-      statement: S,
+  >(
+    statement: S,
   ): RefinedStatementState<S["type"]> {
     const { statementStates } = this.#currentFileState(statement);
     const { label } = statement;
@@ -200,9 +207,7 @@ export class Interpreter {
       case "local":
         return this.setLocal(dest.keyOrName, value, statement);
       case "point":
-        if(!dest.resident) {
-          return this.setPoint(dest.name, value);
-        }
+        return this.setPoint(dest.name, value);
     }
     throw runtimeError(`cannot assign to ${lhs.identifier}`, statement);
   }
@@ -297,8 +302,13 @@ export class Interpreter {
 
   evaluateENABLE(args: readonly Expression[], context: LineContext): void {
     for (const arg of args) {
-      if (arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)) {
-        throw runtimeError(`ENABLE/ACT arg must be ${LineLabelNumber.description}`, context);
+      if (
+        arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)
+      ) {
+        throw runtimeError(
+          `ENABLE/ACT arg must be ${LineLabelNumber.description}`,
+          context,
+        );
       }
       const lineLabel = arg.token.number;
       this.#currentFileState(context).disabledLines.delete(lineLabel);
@@ -307,8 +317,13 @@ export class Interpreter {
 
   evaluateDISABLE(args: readonly Expression[], context: LineContext): void {
     for (const arg of args) {
-      if (arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)) {
-        throw runtimeError(`DISABLE/DEACT arg must be ${LineLabelNumber.description}`, context);
+      if (
+        arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)
+      ) {
+        throw runtimeError(
+          `DISABLE/DEACT arg must be ${LineLabelNumber.description}`,
+          context,
+        );
       }
       const lineLabel = arg.token.number;
       this.#currentFileState(context).disabledLines.add(lineLabel);
@@ -366,6 +381,21 @@ export class Interpreter {
     this.#points.set(name, value);
   }
 
+  getResidentPoint(name: ResidentPointNameType, content: LineContext): number {
+    switch (name) {
+      case "DAY":
+        return this.dateTime().weekdayNumber();
+      case "DAYOFM":
+        return this.dateTime().dayOfMonth();
+      case "CRTIME":
+      case "TIME": // TODO - enforce that TIME type is not assignable
+        return this.dateTime().fractionalHour();
+      case "MONTH":
+        return this.dateTime().monthNumber();
+    }
+    return this.getPoint(name, content);
+  }
+
   evaluateExpression(expression: Expression, context: LineContext): number {
     switch (expression.type) {
       case "literal":
@@ -403,6 +433,8 @@ export class Interpreter {
         return this.getLocal(id.keyOrName, context);
       case "point":
         return this.getPoint(id.name, context);
+      case "residentPoint":
+        return this.getResidentPoint(id.name, context);
       case "status":
         return STATUS_NAMES[id.name];
     }

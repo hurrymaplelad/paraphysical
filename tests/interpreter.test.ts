@@ -153,4 +153,26 @@ Deno.test("Interpreter", async (t) => {
 
     expect(interpreter.getPoint("X", context)).toEqual(1);
   });
+
+  await t.step("Date and Time Points", () => {
+    // Sat Oct 1st @ 05:30am EDT
+    const date = new Date("2022-10-01T09:30Z");
+    const timezone = "America/New_York";
+    const clock = new ManualClock({ initialTimestamp: date.getTime() / 1000 });
+    const interpreter = new Interpreter({ clock, timezone });
+    const filename = "date_and_time_points.ppcl";
+    const content = inlineExample(`
+      001  M = MONTH
+      002  T = CRTIME
+      003  W = DAY
+      004  D = DAYOFM
+    `);
+    interpreter.load(filename, content);
+    interpreter.runOnceSync(filename);
+
+    expect(interpreter.getPoint("M", context)).toEqual(10);
+    expect(interpreter.getPoint("T", context)).toEqual(5.5);
+    expect(interpreter.getPoint("W", context)).toEqual(6);
+    expect(interpreter.getPoint("D", context)).toEqual(1);
+  });
 });
