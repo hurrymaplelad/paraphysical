@@ -12,7 +12,7 @@ await Promise.allSettled([
 ]);
 
 await build({
-  entryPoints: ["./main.ts"],
+  entryPoints: ["./src/main.ts"],
   outDir,
   shims: {
     deno: "dev",

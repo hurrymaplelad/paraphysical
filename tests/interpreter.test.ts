@@ -1,7 +1,7 @@
-import { Interpreter } from "../interpreter.ts";
+import { Interpreter } from "../src/interpreter.ts";
 import { expect } from "https://deno.land/x/expect@v0.2.10/mod.ts";
-import { ManualClock } from "../clocks.ts";
-import { range } from "../numbers.ts";
+import { ManualClock } from "../src/clocks.ts";
+import { range } from "../src/numbers.ts";
 
 async function readExampleText(filename: string): Promise<string> {
   return await Deno.readTextFile(`examples/${filename}`);

@@ -1,6 +1,6 @@
 import { expect } from "https://deno.land/x/expect@v0.2.10/mod.ts";
 import { assert } from "https://deno.land/std@0.97.0/testing/asserts.ts";
-import { parseLine } from "../parser.ts";
+import { parseLine } from "../src/parser.ts";
 
 Deno.test("parseLine()", async (t) => {
   const context = { filename: "test.ppcl", sourceLineNumber: 0 };
