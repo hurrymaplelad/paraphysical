@@ -5,6 +5,10 @@
 
 ## Publishing
 
+Tags starting with `v` are published to NPM via Github actions. See `.github/workflows/ci-cd.yaml`. Create release tags via Github for extra features like release notes.
+
+### Manual Publishing 
+
 ```
 deno run -A scripts/build.ts 0.0.0
 cd npm
