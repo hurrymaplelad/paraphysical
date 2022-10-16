@@ -1,3 +1,6 @@
+[![CI](https://github.com/hurrymaplelad/paraphysical/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/hurrymaplelad/paraphysical/actions/workflows/ci-cd.yaml)
+[![npm version](https://badge.fury.io/js/paraphysical.svg)](https://badge.fury.io/js/paraphysical)
+
 ## Getting Started
 
 1. Install [Deno](https://deno.land)
