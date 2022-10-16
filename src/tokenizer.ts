@@ -1,5 +1,12 @@
 import { LineContext, parsingError } from "./errors.ts";
-import { InfixBinaryOperatorType, INFIX_BINARY_OPERATORS, KeywordSet, KeywordsType, SYMBOLS, SymbolsType } from "./reserved.ts";
+import {
+  INFIX_BINARY_OPERATORS,
+  InfixBinaryOperatorType,
+  KeywordSet,
+  KeywordsType,
+  SYMBOLS,
+  SymbolsType,
+} from "./reserved.ts";
 
 export type Token = Readonly<
   | {
@@ -25,57 +32,57 @@ const tokenizers: ReadonlyArray<
     tokenize: (match: RegExpExecArray) => Token;
   }>
 > = [
-    {
-      regex: new RegExp(`[\\${SYMBOLS.join("\\")}]`, "y"),
-      tokenize: (match) => ({
-        type: match[0] as SymbolsType,
-      }),
+  {
+    regex: new RegExp(`[\\${SYMBOLS.join("\\")}]`, "y"),
+    tokenize: (match) => ({
+      type: match[0] as SymbolsType,
+    }),
+  },
+  {
+    regex: new RegExp(
+      Object.keys(INFIX_BINARY_OPERATORS)
+        .map((op) => op.length === 1 ? `\\${op}` : op.replace(".", "\\."))
+        .join("|"),
+      "y",
+    ),
+    tokenize: (match) => {
+      const op = match[0] as InfixBinaryOperatorType;
+      return {
+        type: "ibop",
+        operator: op,
+        precedence: INFIX_BINARY_OPERATORS[op],
+      };
     },
-    {
-      regex: new RegExp(
-        Object.keys(INFIX_BINARY_OPERATORS)
-          .map((op) => op.length === 1 ? `\\${op}` : op.replace(".", "\\."))
-          .join("|"),
-        "y",
-      ),
-      tokenize: (match) => {
-        const op = match[0] as InfixBinaryOperatorType;
-        return {
-          type: "ibop",
-          operator: op,
-          precedence: INFIX_BINARY_OPERATORS[op],
+  },
+  {
+    regex: /[0-9]+(\.[0-9]+)?/y,
+    tokenize: (match) => ({
+      type: "number",
+      number: Number(match[0]),
+    }),
+  },
+  {
+    regex: /\$?[A-Za-z][A-Za-z0-9]*/y,
+    tokenize: (match) => {
+      const name = match[0];
+      return KeywordSet.has(name)
+        ? {
+          type: name as KeywordsType,
+        }
+        : {
+          type: "name",
+          name,
         };
-      },
     },
-    {
-      regex: /[0-9]+(\.[0-9]+)?/y,
-      tokenize: (match) => ({
-        type: "number",
-        number: Number(match[0]),
-      }),
-    },
-    {
-      regex: /\$?[A-Za-z][A-Za-z0-9]*/y,
-      tokenize: (match) => {
-        const name = match[0];
-        return KeywordSet.has(name)
-          ? {
-            type: name as KeywordsType,
-          }
-          : {
-            type: "name",
-            name,
-          };
-      },
-    },
-    {
-      regex: /"([A-Za-z0-9:$ .,_'-]+)"/y,
-      tokenize: (match) => ({
-        type: "name",
-        name: match[1],
-      }),
-    },
-  ];
+  },
+  {
+    regex: /"([A-Za-z0-9:$ .,_'-]+)"/y,
+    tokenize: (match) => ({
+      type: "name",
+      name: match[1],
+    }),
+  },
+];
 const whitespaceRegex = /\s+/y;
 
 export function tokenizeLine(

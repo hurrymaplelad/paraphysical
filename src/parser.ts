@@ -6,7 +6,13 @@ import {
   unexpectedTokenError,
 } from "./errors.ts";
 import { LineLabelNumber, PositiveInt16 } from "./numbers.ts";
-import { InfixBinaryOperatorType, ResidentPointNameType, ResidentPointSet, StatusNameType, STATUS_NAMES } from "./reserved.ts";
+import {
+  InfixBinaryOperatorType,
+  ResidentPointNameType,
+  ResidentPointSet,
+  STATUS_NAMES,
+  StatusNameType,
+} from "./reserved.ts";
 import { Token, tokenizeLine } from "./tokenizer.ts";
 
 export type StatementContext = Readonly<
@@ -444,7 +450,7 @@ export function parseCallExpression(
     type: "call",
     functionName: functionNameToken.name,
     arg,
-  }
+  };
 }
 
 export function parseLiteral(
@@ -500,9 +506,9 @@ export function parseReferenceIdentifier(
     return {
       type: "status",
       name: identifier as StatusNameType,
-    }
+    };
   }
-  if((ResidentPointSet as Set<string>).has(identifier)){
+  if ((ResidentPointSet as Set<string>).has(identifier)) {
     return {
       type: "residentPoint",
       name: identifier as ResidentPointNameType,

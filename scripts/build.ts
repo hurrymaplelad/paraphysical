@@ -27,5 +27,5 @@ await build({
       type: "git",
       url: "git+https://github.com/hurrymaplelad/paraphysical.git",
     },
-  }
+  },
 });
