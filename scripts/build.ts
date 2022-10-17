@@ -7,15 +7,16 @@ await emptyDir(outDir);
 
 await Promise.allSettled([
   Deno.copyFile("README.md", "npm/README.md"),
-  copy("examples", "npm/esm/examples"),
-  copy("examples", "npm/script/examples"),
 ]);
 
 await build({
   entryPoints: ["./src/main.ts"],
+  typeCheck: false,
+  test: false,
   outDir,
-  shims: {
-    deno: "dev",
+  shims: {},
+  compilerOptions: {
+    sourceMap: true,
   },
   package: {
     // package.json properties
