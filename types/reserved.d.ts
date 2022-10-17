@@ -1,0 +1,33 @@
+export declare const SYMBOLS: readonly ["(", ")", ",", "="];
+export declare type SymbolsType = typeof SYMBOLS[number];
+export declare const KEYWORDS: readonly ["IF", "THEN", "ELSE", "GOTO", "GOSUB", "RETURN"];
+export declare type KeywordsType = typeof KEYWORDS[number];
+export declare const KeywordSet: Set<string>;
+export declare const INFIX_BINARY_OPERATORS: {
+    readonly ".ROOT.": 3;
+    readonly "*": 4;
+    readonly "/": 4;
+    readonly "+": 5;
+    readonly "-": 5;
+    readonly ".EQ.": 6;
+    readonly ".NE.": 6;
+    readonly ".GT.": 6;
+    readonly ".GE.": 6;
+    readonly ".LT.": 6;
+    readonly ".LE.": 6;
+    readonly ".AND.": 7;
+    readonly ".NAND.": 7;
+    readonly ".OR.": 8;
+    readonly ".XOR.": 8;
+};
+export declare type InfixBinaryOperatorType = keyof typeof INFIX_BINARY_OPERATORS;
+export declare const RESIDENT_POINTS: readonly ["$BATT", "DAY", "DAYOFM", "TIME", "CRTIME", "MONTH"];
+export declare type ResidentPointNameType = typeof RESIDENT_POINTS[number];
+export declare const ResidentPointSet: Set<"$BATT" | "DAY" | "DAYOFM" | "TIME" | "CRTIME" | "MONTH">;
+export declare const SECONDS_COUNTER_REGEX: RegExp;
+export declare const STATUS_NAMES: {
+    readonly DEAD: 0;
+    readonly LOW: 50;
+    readonly OK: 100;
+};
+export declare type StatusNameType = keyof typeof STATUS_NAMES;

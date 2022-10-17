@@ -1,0 +1,25 @@
+{
+  "module": "./esm/main.js",
+  "main": "./script/main.js",
+  "types": "./types/main.d.ts",
+  "name": "paraphysical",
+  "version": "refs/heads/main",
+  "description": "PPCL interpreter",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hurrymaplelad/paraphysical.git"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "default": "./esm/main.js",
+        "types": "./types/main.d.ts"
+      },
+      "require": {
+        "default": "./script/main.js",
+        "types": "./types/main.d.ts"
+      }
+    }
+  }
+}
