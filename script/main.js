@@ -18,4 +18,5 @@ __exportStar(require("./interpreter.js"), exports);
 __exportStar(require("./parser.js"), exports);
 __exportStar(require("./tokenizer.js"), exports);
 __exportStar(require("./reserved.js"), exports);
+__exportStar(require("./clocks.js"), exports);
 //# sourceMappingURL=main.js.map

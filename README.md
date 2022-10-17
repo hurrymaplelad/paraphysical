@@ -6,9 +6,13 @@
 1. Install [Deno](https://deno.land)
 2. Run tests: `$ deno test -A`
 
-## Publishing
+## Continuous Deployment
 
-Tags starting with `v` are published to NPM via Github actions. See `.github/workflows/ci-cd.yaml`. Create release tags via Github for extra features like release notes.
+Uses Github Actions for CI/CD. See `.github/`.
+
+Every push to the `main` branch triggers committing a corresponding node module build to the release branch. `npm install hurrymaplelad/paraphysical#release` to depend on the mainline.
+
+Tags starting with `v` have their release builds published to NPM. Create release tags via Github for extra features like release notes.
 
 ### Manual Publishing 
 
