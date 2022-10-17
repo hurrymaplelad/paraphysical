@@ -1,0 +1,13 @@
+name: Checks and Tests
+on:
+  push:
+    branches-ignore:
+      - release
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/check

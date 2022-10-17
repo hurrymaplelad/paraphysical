@@ -1,0 +1,46 @@
+name: Release
+description: Assummes denoland/setup-deno has already run
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v3
+      with:
+        node-version: "16.x"
+        registry-url: "https://registry.npmjs.org"
+    - name: denoland/dnt
+      run: deno run -A ./scripts/build.ts ${GITHUB_REF/refs\/tags\//}
+      shell: bash
+    - name: git checkout release
+      run: |
+        # Intentionally use checkout instead of switch to keep main branch files around
+        git checkout --orphan release
+        # Unstage main branch files
+        git reset
+      shell: bash
+    - name: arrange files
+      run: |
+        rm -r npm/node_modules || echo ""
+        git add -f npm
+        git clean -fd
+        git reset 
+        mv npm/* . 
+        rm -r npm
+      shell: bash
+    - name: git commit
+      run: |
+        git add .
+        git config user.name "GitHub Actions"
+        git config user.email noreply@github.com
+        git commit -m"Release ${{ github.ref_name }}@${{ github.sha }}"
+      shell: bash
+    - name: git rebase
+      run: |
+        git pull --rebase -Xtheirs origin release
+      shell: bash
+    - name: git push
+      run: |
+        git push origin release
+        # Leave the repo on the main branch so that github 
+        # can find .github/actions to tear down
+        git checkout main
+      shell: bash
