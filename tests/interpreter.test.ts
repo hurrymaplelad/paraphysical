@@ -218,5 +218,15 @@ Deno.test("Interpreter", async (t) => {
     interpreter.loadFileState(filename, state);
     interpreter.runOnceSync(filename);
     expect(interpreter.getPoint("X", context)).toEqual(3);
+
+    const editedContent = inlineExample(`
+      001  X = 0
+      002  X = X + 1
+      003  GOTO 2
+    `);
+    interpreter.load(filename, editedContent);
+    expect(state.statementStates.has(2)).toBeTruthy();
+    interpreter.loadFileState(filename, state);
+    expect(state.statementStates.has(2)).toBeFalsy();
   });
 });

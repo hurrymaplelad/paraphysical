@@ -177,12 +177,23 @@ export class Interpreter {
     return context[1];
   }
 
+  /**
+   * Mutates the argument state.
+   * Mismatched statement states are reset.
+   */
   loadFileState(filename: string, state: FileEvaluationState): void {
     const context = this.#files.get(filename);
     if (context == undefined) {
       throw new Error(`${filename} not loaded`);
     }
     const [parsed] = context;
+    // Sanitize statement state
+    for (const [label, { type }] of state.statementStates.entries()) {
+      const parsedStatement = parsed.statements.get(label);
+      if (parsedStatement == null || parsedStatement.type !== type) {
+        state.statementStates.delete(label);
+      }
+    }
     this.#files.set(filename, [parsed, state]);
   }
 
