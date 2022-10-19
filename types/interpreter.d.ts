@@ -3,7 +3,7 @@ import { LineContext } from "./errors.js";
 import { Expression, RefinedExpression, RefinedStatement, Statement } from "./parser.js";
 import { ResidentPointNameType } from "./reserved.js";
 import { DateTime } from "./datetime.js";
-declare type FileEvaluationState = {
+export declare type FileEvaluationState = {
     disabledLabels: Set<number>;
     gosubStack: number[];
     readonly locals: Map<string, number>;
@@ -12,7 +12,7 @@ declare type FileEvaluationState = {
     readonly secondsCounterAssignmentTimestamps: Map<string, number>;
     timestampAtStartOfLatestRun: number;
 };
-declare type StatementState = {
+export declare type StatementState = {
     readonly type: "SAMPLE";
     lastRunTimestamp: number;
 };
@@ -79,4 +79,3 @@ export declare class Interpreter {
     evaluateInfixBinaryOperation(expression: RefinedExpression<"ibop">, context: LineContext): number;
     evaluateCallExpression(expression: RefinedExpression<"call">, context: LineContext): number;
 }
-export {};
