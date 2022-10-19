@@ -25,7 +25,7 @@ import { DateTime } from "./datetime.ts";
 const LOCAL_DELIMITER = ":" as const;
 const MAX_GOSUB_STACK_DEPTH = 8;
 
-type FileEvaluationState = {
+export type FileEvaluationState = {
   disabledLabels: Set<number>;
   gosubStack: number[];
   readonly locals: Map<string, number>;
@@ -35,7 +35,7 @@ type FileEvaluationState = {
   timestampAtStartOfLatestRun: number;
 };
 
-type StatementState = {
+export type StatementState = {
   readonly type: "SAMPLE";
   lastRunTimestamp: number;
 };
