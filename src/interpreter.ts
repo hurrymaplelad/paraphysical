@@ -26,7 +26,7 @@ const LOCAL_DELIMITER = ":" as const;
 const MAX_GOSUB_STACK_DEPTH = 8;
 
 type FileEvaluationState = {
-  disabledLines: Set<number>;
+  disabledLabels: Set<number>;
   gosubStack: number[];
   readonly locals: Map<string, number>;
   programCounter: number;
@@ -85,10 +85,16 @@ export class Interpreter {
     }
   }
 
+  /**
+   * Parses the program text for a file.
+   * Loading the same file again will reset state for that file.
+   * Use `getFileState()` + `loadFileState()` to preserve state
+   * across loads.
+   */
   load(filename: string, contents: string): void {
     const parsedFile = parseFile(contents, { filename });
     const state = {
-      disabledLines: new Set<number>(),
+      disabledLabels: new Set<number>(),
       gosubStack: [],
       locals: new Map(),
       programCounter: 0,
@@ -128,7 +134,7 @@ export class Interpreter {
       // if (statement != null) {
       //   console.log("evaluating", statement.label, statement.type);
       // }
-      if (statement != null && !state.disabledLines.has(statement.label)) {
+      if (statement != null && !state.disabledLabels.has(statement.label)) {
         this.evaluateStatement(statement);
       }
       // Check if we reached the end of the file, which triggers
@@ -154,6 +160,30 @@ export class Interpreter {
       throw runtimeError("No running file", context);
     }
     return record[1];
+  }
+
+  /**
+   * The returned object is the live, mutable state used
+   * by the interpreter. Callers may mutate things like local
+   * values and the interpreter will reflect the changes.
+   *
+   * Use `strucuturedClone()` to make a copy.
+   */
+  getFileState(filename: string): FileEvaluationState {
+    const context = this.#files.get(filename);
+    if (context == undefined) {
+      throw new Error(`${filename} not loaded`);
+    }
+    return context[1];
+  }
+
+  loadFileState(filename: string, state: FileEvaluationState): void {
+    const context = this.#files.get(filename);
+    if (context == undefined) {
+      throw new Error(`${filename} not loaded`);
+    }
+    const [parsed] = context;
+    this.#files.set(filename, [parsed, state]);
   }
 
   #statementState<
@@ -326,7 +356,7 @@ export class Interpreter {
         );
       }
       const lineLabel = arg.token.number;
-      this.#currentFileState(context).disabledLines.delete(lineLabel);
+      this.#currentFileState(context).disabledLabels.delete(lineLabel);
     }
   }
 
@@ -341,7 +371,7 @@ export class Interpreter {
         );
       }
       const lineLabel = arg.token.number;
-      this.#currentFileState(context).disabledLines.add(lineLabel);
+      this.#currentFileState(context).disabledLabels.add(lineLabel);
     }
   }
 

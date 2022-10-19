@@ -177,7 +177,6 @@ Deno.test("Interpreter", async (t) => {
   });
 
   await t.step("Seconds Counters", () => {
-    // Sat Oct 1st @ 05:30am EDT
     const clock = new ManualClock();
     const interpreter = new Interpreter({ clock });
     const filename = "seconds_counters.ppcl";
@@ -195,5 +194,29 @@ Deno.test("Interpreter", async (t) => {
 
     expect(interpreter.getPoint("X", context)).toEqual(3);
     expect(interpreter.getPoint("Y", context)).toEqual(4);
+  });
+
+  await t.step("Saving State", () => {
+    const clock = new ManualClock();
+    const interpreter = new Interpreter({ clock });
+    const filename = "saving_state.ppcl";
+    const content = inlineExample(`
+      001  X = 0
+      002  SAMPLE(3) X = X + 1
+      003  GOTO 2
+    `);
+    interpreter.load(filename, content);
+    for (const _ of range({ end: 6 })) {
+      interpreter.runOnceSync(filename);
+      clock.tick(1);
+    }
+    expect(interpreter.getPoint("X", context)).toEqual(2);
+    // SAMPLE is primed to pass on next run
+
+    const state = interpreter.getFileState(filename);
+    interpreter.load(filename, content);
+    interpreter.loadFileState(filename, state);
+    interpreter.runOnceSync(filename);
+    expect(interpreter.getPoint("X", context)).toEqual(3);
   });
 });
