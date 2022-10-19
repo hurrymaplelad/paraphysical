@@ -437,6 +437,10 @@ export class Interpreter {
     this.#points.set(name, value);
   }
 
+  getPointsForDebug(): Map<string, number> {
+    return this.#points;
+  }
+
   getSecondsCounter(name: string, context: LineContext): number {
     const assignmentTime = this.#currentFileState(context)
       .secondsCounterAssignmentTimestamps.get(name) ??

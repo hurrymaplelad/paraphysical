@@ -70,6 +70,7 @@ export declare class Interpreter {
     setLocal(nameOrKey: string, value: number, context: LineContext): void;
     getPoint(name: string, context: LineContext): number;
     setPoint(name: string, value: number): void;
+    getPointsForDebug(): Map<string, number>;
     getSecondsCounter(name: string, context: LineContext): number;
     setSecondsCounter(name: string, value: number, context: LineContext): void;
     getResidentPoint(name: ResidentPointNameType, content: LineContext): number;

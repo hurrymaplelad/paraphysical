@@ -315,6 +315,9 @@ class Interpreter {
     setPoint(name, value) {
         __classPrivateFieldGet(this, _Interpreter_points, "f").set(name, value);
     }
+    getPointsForDebug() {
+        return __classPrivateFieldGet(this, _Interpreter_points, "f");
+    }
     getSecondsCounter(name, context) {
         const assignmentTime = __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context)
             .secondsCounterAssignmentTimestamps.get(name) ??
