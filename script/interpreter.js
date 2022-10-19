@@ -60,10 +60,16 @@ class Interpreter {
             __classPrivateFieldGet(this, _Interpreter_points, "f").set(name, value);
         }
     }
+    /**
+     * Parses the program text for a file.
+     * Loading the same file again will reset state for that file.
+     * Use `getFileState()` + `loadFileState()` to preserve state
+     * across loads.
+     */
     load(filename, contents) {
         const parsedFile = (0, parser_js_1.parseFile)(contents, { filename });
         const state = {
-            disabledLines: new Set(),
+            disabledLabels: new Set(),
             gosubStack: [],
             locals: new Map(),
             programCounter: 0,
@@ -100,7 +106,7 @@ class Interpreter {
             // if (statement != null) {
             //   console.log("evaluating", statement.label, statement.type);
             // }
-            if (statement != null && !state.disabledLines.has(statement.label)) {
+            if (statement != null && !state.disabledLabels.has(statement.label)) {
                 this.evaluateStatement(statement);
             }
             // Check if we reached the end of the file, which triggers
@@ -115,6 +121,39 @@ class Interpreter {
         for (const _ of this.runOnce(filename)) {
             // consume line
         }
+    }
+    /**
+     * The returned object is the live, mutable state used
+     * by the interpreter. Callers may mutate things like local
+     * values and the interpreter will reflect the changes.
+     *
+     * Use `strucuturedClone()` to make a copy.
+     */
+    getFileState(filename) {
+        const context = __classPrivateFieldGet(this, _Interpreter_files, "f").get(filename);
+        if (context == undefined) {
+            throw new Error(`${filename} not loaded`);
+        }
+        return context[1];
+    }
+    /**
+     * Mutates the argument state.
+     * Mismatched statement states are reset.
+     */
+    loadFileState(filename, state) {
+        const context = __classPrivateFieldGet(this, _Interpreter_files, "f").get(filename);
+        if (context == undefined) {
+            throw new Error(`${filename} not loaded`);
+        }
+        const [parsed] = context;
+        // Sanitize statement state
+        for (const [label, { type }] of state.statementStates.entries()) {
+            const parsedStatement = parsed.statements.get(label);
+            if (parsedStatement == null || parsedStatement.type !== type) {
+                state.statementStates.delete(label);
+            }
+        }
+        __classPrivateFieldGet(this, _Interpreter_files, "f").set(filename, [parsed, state]);
     }
     evaluateStatement(statement) {
         switch (statement.type) {
@@ -237,7 +276,7 @@ class Interpreter {
                 throw (0, errors_js_1.runtimeError)(`ENABLE/ACT arg must be ${numbers_js_1.LineLabelNumber.description}`, context);
             }
             const lineLabel = arg.token.number;
-            __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context).disabledLines.delete(lineLabel);
+            __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context).disabledLabels.delete(lineLabel);
         }
     }
     evaluateDISABLE(args, context) {
@@ -246,7 +285,7 @@ class Interpreter {
                 throw (0, errors_js_1.runtimeError)(`DISABLE/DEACT arg must be ${numbers_js_1.LineLabelNumber.description}`, context);
             }
             const lineLabel = arg.token.number;
-            __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context).disabledLines.add(lineLabel);
+            __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context).disabledLabels.add(lineLabel);
         }
     }
     getLocal(nameOrKey, context) {

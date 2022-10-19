@@ -3,6 +3,19 @@ import { LineContext } from "./errors.js";
 import { Expression, RefinedExpression, RefinedStatement, Statement } from "./parser.js";
 import { ResidentPointNameType } from "./reserved.js";
 import { DateTime } from "./datetime.js";
+declare type FileEvaluationState = {
+    disabledLabels: Set<number>;
+    gosubStack: number[];
+    readonly locals: Map<string, number>;
+    programCounter: number;
+    readonly statementStates: Map<number, StatementState>;
+    readonly secondsCounterAssignmentTimestamps: Map<string, number>;
+    timestampAtStartOfLatestRun: number;
+};
+declare type StatementState = {
+    readonly type: "SAMPLE";
+    lastRunTimestamp: number;
+};
 export declare class Interpreter {
     #private;
     readonly clock: Clock;
@@ -11,6 +24,12 @@ export declare class Interpreter {
         clock?: Clock;
         timezone?: string;
     }> | null);
+    /**
+     * Parses the program text for a file.
+     * Loading the same file again will reset state for that file.
+     * Use `getFileState()` + `loadFileState()` to preserve state
+     * across loads.
+     */
     load(filename: string, contents: string): void;
     dateTime(): DateTime;
     /**
@@ -23,6 +42,19 @@ export declare class Interpreter {
      */
     runOnce(filename: string): Iterable<void>;
     runOnceSync(filename: string): void;
+    /**
+     * The returned object is the live, mutable state used
+     * by the interpreter. Callers may mutate things like local
+     * values and the interpreter will reflect the changes.
+     *
+     * Use `strucuturedClone()` to make a copy.
+     */
+    getFileState(filename: string): FileEvaluationState;
+    /**
+     * Mutates the argument state.
+     * Mismatched statement states are reset.
+     */
+    loadFileState(filename: string, state: FileEvaluationState): void;
     evaluateStatement(statement: Statement): void;
     evaluateConditional(statement: RefinedStatement<"conditional">): void;
     evaluateAssignment(statement: RefinedStatement<"assignment">): void;
@@ -47,3 +79,4 @@ export declare class Interpreter {
     evaluateInfixBinaryOperation(expression: RefinedExpression<"ibop">, context: LineContext): number;
     evaluateCallExpression(expression: RefinedExpression<"call">, context: LineContext): number;
 }
+export {};
