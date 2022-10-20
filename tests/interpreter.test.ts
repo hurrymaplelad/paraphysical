@@ -208,12 +208,11 @@ Deno.test("Interpreter", async (t) => {
       020  X = 1
       030  GOTO 2
     `);
-    let yieldCount = 0;
     interpreter.load(filename, content);
-    for (const _ of interpreter.runOnce(filename)) {
-      yieldCount += 1;
-    }
-    expect(yieldCount).toEqual(2);
+    const iterator = interpreter.runOnce(filename);
+    iterator.next();
+    const fileState = interpreter.getFileState(filename);
+    expect(fileState.programCounter).toEqual(20);
   });
 
   await t.step("Saving State", () => {
