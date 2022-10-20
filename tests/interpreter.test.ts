@@ -204,14 +204,17 @@ Deno.test("Interpreter", async (t) => {
     const interpreter = new Interpreter();
     const filename = "iterating.ppcl";
     const content = inlineExample(`
-      010  X = 0
       020  X = 1
       030  GOTO 2
     `);
     interpreter.load(filename, content);
+    const fileState = interpreter.getFileState(filename);
     const iterator = interpreter.runOnce(filename);
     iterator.next();
-    const fileState = interpreter.getFileState(filename);
+    expect(fileState.programCounter).toEqual(20);
+    iterator.next();
+    expect(fileState.programCounter).toEqual(30);
+    iterator.next();
     expect(fileState.programCounter).toEqual(20);
   });
 
