@@ -80,4 +80,3 @@ _DateTime_instances = new WeakSet(), _DateTime_part = function _DateTime_part(op
     const partsList = format.formatToParts(this.timestamp * 1000);
     return partsList[0];
 };
-//# sourceMappingURL=datetime.js.map

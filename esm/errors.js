@@ -32,4 +32,3 @@ export function fileNotLoaded(filename) {
     return new Error(`Cannot run "${filename}" - not loaded.`);
 }
 export function assertNever(_) { }
-//# sourceMappingURL=errors.js.map

@@ -76,4 +76,3 @@ export class ManualClock {
     }
 }
 _ManualClock_lapStartTimestamp = new WeakMap(), _ManualClock_initialTimestamp = new WeakMap(), _ManualClock_timestamp = new WeakMap();
-//# sourceMappingURL=clocks.js.map

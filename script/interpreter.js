@@ -98,7 +98,8 @@ class Interpreter {
         const [{ statements, maxLabel }, state] = record;
         __classPrivateFieldSet(this, _Interpreter_currentFilename, filename, "f");
         state.timestampAtStartOfLatestRun = this.clock.getTimestamp();
-        while (state.programCounter <= maxLabel) {
+        while (state.programCounter <= maxLabel && statements.size > 0) {
+            state.programCounter = Interpreter.findNextStatementLabel(state.programCounter, maxLabel, statements);
             const statement = statements.get(state.programCounter);
             // It's important to increment the program counter *before* evaluating
             // the statement in case it's a GOTO or similar.
@@ -110,6 +111,9 @@ class Interpreter {
             if (!state.disabledLabels.has(statement.label)) {
                 this.evaluateStatement(statement);
             }
+            // Skip any following omitted labels to leave the program counter
+            // on an interesting label for debuggers.
+            state.programCounter = Interpreter.findNextStatementLabel(state.programCounter, maxLabel, statements);
             // Check if we reached the end of the file, which triggers
             // time increments and such.
             if (statement?.label === maxLabel) {
@@ -117,6 +121,15 @@ class Interpreter {
             }
             yield;
         }
+    }
+    static findNextStatementLabel(firstCandidate, maxLabel, statements) {
+        let statement;
+        let label = firstCandidate;
+        while (statement == null) {
+            statement = statements.get(label);
+            label = label >= maxLabel ? 1 : label + 1;
+        }
+        return statement.label;
     }
     runOnceSync(filename) {
         for (const _ of this.runOnce(filename)) {
@@ -482,4 +495,3 @@ _Interpreter_files = new WeakMap(), _Interpreter_points = new WeakMap(), _Interp
 }, _Interpreter_isLocalDeclared = function _Interpreter_isLocalDeclared([filename, name]) {
     return __classPrivateFieldGet(this, _Interpreter_files, "f").get(filename)?.[1].locals.has(name) ?? false;
 };
-//# sourceMappingURL=interpreter.js.map

@@ -50,4 +50,3 @@ exports.STATUS_NAMES = {
     LOW: 50,
     OK: 100,
 };
-//# sourceMappingURL=reserved.js.map

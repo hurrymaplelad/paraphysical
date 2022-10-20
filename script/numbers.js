@@ -27,4 +27,3 @@ function* range({ start, end, step }) {
     }
 }
 exports.range = range;
-//# sourceMappingURL=numbers.js.map

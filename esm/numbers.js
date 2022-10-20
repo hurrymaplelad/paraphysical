@@ -23,4 +23,3 @@ export function* range({ start, end, step }) {
         yield i;
     }
 }
-//# sourceMappingURL=numbers.js.map

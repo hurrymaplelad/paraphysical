@@ -300,4 +300,3 @@ function consumeExpected(tokens, expected, context, expectedLabel = "") {
     }
     return token;
 }
-//# sourceMappingURL=parser.js.map
