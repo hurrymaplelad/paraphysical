@@ -15,9 +15,6 @@ await build({
   test: false,
   outDir,
   shims: {},
-  compilerOptions: {
-    sourceMap: true,
-  },
   package: {
     // package.json properties
     name: "paraphysical",
