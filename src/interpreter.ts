@@ -441,6 +441,10 @@ export class Interpreter {
     return this.#points;
   }
 
+  getStatementForDebug(filename: string, label: number): Statement | undefined {
+    return this.#files.get(filename)?.[0]?.statements?.get(label);
+  }
+
   getSecondsCounter(name: string, context: LineContext): number {
     const assignmentTime = this.#currentFileState(context)
       .secondsCounterAssignmentTimestamps.get(name) ??
