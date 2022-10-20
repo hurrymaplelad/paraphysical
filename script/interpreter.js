@@ -28,7 +28,7 @@ const DEFAULT_STATEMENT_STATES = {
     }),
 };
 const DEFAULT_RESIDENT_POINT_VALUES = {
-    "$BATT": reserved_js_1.STATUS_NAMES.OK,
+    $BATT: reserved_js_1.STATUS_NAMES.OK,
 };
 class Interpreter {
     constructor(options = null) {
@@ -103,10 +103,11 @@ class Interpreter {
             // It's important to increment the program counter *before* evaluating
             // the statement in case it's a GOTO or similar.
             state.programCounter += 1;
-            // if (statement != null) {
+            if (statement == null) {
+                continue;
+            }
             //   console.log("evaluating", statement.label, statement.type);
-            // }
-            if (statement != null && !state.disabledLabels.has(statement.label)) {
+            if (!state.disabledLabels.has(statement.label)) {
                 this.evaluateStatement(statement);
             }
             // Check if we reached the end of the file, which triggers
@@ -272,7 +273,8 @@ class Interpreter {
     }
     evaluateENABLE(args, context) {
         for (const arg of args) {
-            if (arg.type !== "literal" || !numbers_js_1.LineLabelNumber.isValid(arg.token.number)) {
+            if (arg.type !== "literal" ||
+                !numbers_js_1.LineLabelNumber.isValid(arg.token.number)) {
                 throw (0, errors_js_1.runtimeError)(`ENABLE/ACT arg must be ${numbers_js_1.LineLabelNumber.description}`, context);
             }
             const lineLabel = arg.token.number;
@@ -281,7 +283,8 @@ class Interpreter {
     }
     evaluateDISABLE(args, context) {
         for (const arg of args) {
-            if (arg.type !== "literal" || !numbers_js_1.LineLabelNumber.isValid(arg.token.number)) {
+            if (arg.type !== "literal" ||
+                !numbers_js_1.LineLabelNumber.isValid(arg.token.number)) {
                 throw (0, errors_js_1.runtimeError)(`DISABLE/DEACT arg must be ${numbers_js_1.LineLabelNumber.description}`, context);
             }
             const lineLabel = arg.token.number;
@@ -322,9 +325,7 @@ class Interpreter {
         return __classPrivateFieldGet(this, _Interpreter_files, "f").get(filename)?.[0]?.statements?.get(label);
     }
     getSecondsCounter(name, context) {
-        const assignmentTime = __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context)
-            .secondsCounterAssignmentTimestamps.get(name) ??
-            this.clock.initialTimestamp();
+        const assignmentTime = __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context).secondsCounterAssignmentTimestamps.get(name) ?? this.clock.initialTimestamp();
         const assignedCount = __classPrivateFieldGet(this, _Interpreter_points, "f").get(name) ?? 0;
         return Math.floor(this.clock.getTimestamp() - assignmentTime + assignedCount);
     }

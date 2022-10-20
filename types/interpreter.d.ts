@@ -40,7 +40,7 @@ export declare class Interpreter {
      * if the final statement was a GOTO, the programCounter will point
      * to the GOTO line if the file is run again.
      */
-    runOnce(filename: string): Iterable<void>;
+    runOnce(filename: string): IterableIterator<void>;
     runOnceSync(filename: string): void;
     /**
      * The returned object is the live, mutable state used

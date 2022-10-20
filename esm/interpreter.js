@@ -25,7 +25,7 @@ const DEFAULT_STATEMENT_STATES = {
     }),
 };
 const DEFAULT_RESIDENT_POINT_VALUES = {
-    "$BATT": STATUS_NAMES.OK,
+    $BATT: STATUS_NAMES.OK,
 };
 export class Interpreter {
     constructor(options = null) {
@@ -100,10 +100,11 @@ export class Interpreter {
             // It's important to increment the program counter *before* evaluating
             // the statement in case it's a GOTO or similar.
             state.programCounter += 1;
-            // if (statement != null) {
+            if (statement == null) {
+                continue;
+            }
             //   console.log("evaluating", statement.label, statement.type);
-            // }
-            if (statement != null && !state.disabledLabels.has(statement.label)) {
+            if (!state.disabledLabels.has(statement.label)) {
                 this.evaluateStatement(statement);
             }
             // Check if we reached the end of the file, which triggers
@@ -269,7 +270,8 @@ export class Interpreter {
     }
     evaluateENABLE(args, context) {
         for (const arg of args) {
-            if (arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)) {
+            if (arg.type !== "literal" ||
+                !LineLabelNumber.isValid(arg.token.number)) {
                 throw runtimeError(`ENABLE/ACT arg must be ${LineLabelNumber.description}`, context);
             }
             const lineLabel = arg.token.number;
@@ -278,7 +280,8 @@ export class Interpreter {
     }
     evaluateDISABLE(args, context) {
         for (const arg of args) {
-            if (arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)) {
+            if (arg.type !== "literal" ||
+                !LineLabelNumber.isValid(arg.token.number)) {
                 throw runtimeError(`DISABLE/DEACT arg must be ${LineLabelNumber.description}`, context);
             }
             const lineLabel = arg.token.number;
@@ -319,9 +322,7 @@ export class Interpreter {
         return __classPrivateFieldGet(this, _Interpreter_files, "f").get(filename)?.[0]?.statements?.get(label);
     }
     getSecondsCounter(name, context) {
-        const assignmentTime = __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context)
-            .secondsCounterAssignmentTimestamps.get(name) ??
-            this.clock.initialTimestamp();
+        const assignmentTime = __classPrivateFieldGet(this, _Interpreter_instances, "m", _Interpreter_currentFileState).call(this, context).secondsCounterAssignmentTimestamps.get(name) ?? this.clock.initialTimestamp();
         const assignedCount = __classPrivateFieldGet(this, _Interpreter_points, "f").get(name) ?? 0;
         return Math.floor(this.clock.getTimestamp() - assignmentTime + assignedCount);
     }
