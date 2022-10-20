@@ -1,5 +1,4 @@
 import { build, emptyDir } from "https://deno.land/x/dnt@0.31.0/mod.ts";
-import { copy } from "https://deno.land/std@0.159.0/fs/mod.ts";
 
 const outDir = "./npm";
 
