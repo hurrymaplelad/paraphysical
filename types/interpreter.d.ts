@@ -71,6 +71,7 @@ export declare class Interpreter {
     getPoint(name: string, context: LineContext): number;
     setPoint(name: string, value: number): void;
     getPointsForDebug(): Map<string, number>;
+    getStatementForDebug(filename: string, label: number): Statement | undefined;
     getSecondsCounter(name: string, context: LineContext): number;
     setSecondsCounter(name: string, value: number, context: LineContext): void;
     getResidentPoint(name: ResidentPointNameType, content: LineContext): number;
