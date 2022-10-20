@@ -8,7 +8,11 @@ async function readExampleText(filename: string): Promise<string> {
 }
 
 function inlineExample(content: string): string {
-  return content.split("\n").map((l) => l.trim()).filter(Boolean).join("\n");
+  return content
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join("\n");
 }
 
 Deno.test("Interpreter", async (t) => {
@@ -194,6 +198,22 @@ Deno.test("Interpreter", async (t) => {
 
     expect(interpreter.getPoint("X", context)).toEqual(3);
     expect(interpreter.getPoint("Y", context)).toEqual(4);
+  });
+
+  await t.step("Iterating Evaluation", () => {
+    const interpreter = new Interpreter();
+    const filename = "iterating.ppcl";
+    const content = inlineExample(`
+      010  X = 0
+      020  X = 1
+      030  GOTO 2
+    `);
+    let yieldCount = 0;
+    interpreter.load(filename, content);
+    for (const _ of interpreter.runOnce(filename)) {
+      yieldCount += 1;
+    }
+    expect(yieldCount).toEqual(2);
   });
 
   await t.step("Saving State", () => {

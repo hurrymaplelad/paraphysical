@@ -46,10 +46,7 @@ type RefinedStatementState<Type extends StatementState["type"]> = Extract<
 >;
 
 const DEFAULT_STATEMENT_STATES: {
-  [P in StatementState["type"]]: () => Extract<
-    StatementState,
-    { type: P }
-  >;
+  [P in StatementState["type"]]: () => Extract<StatementState, { type: P }>;
 } = {
   SAMPLE: () => ({
     type: "SAMPLE",
@@ -58,7 +55,7 @@ const DEFAULT_STATEMENT_STATES: {
 };
 
 const DEFAULT_RESIDENT_POINT_VALUES = {
-  "$BATT": STATUS_NAMES.OK,
+  $BATT: STATUS_NAMES.OK,
 } as const;
 
 export class Interpreter {
@@ -117,7 +114,7 @@ export class Interpreter {
    * if the final statement was a GOTO, the programCounter will point
    * to the GOTO line if the file is run again.
    */
-  *runOnce(filename: string): Iterable<void> {
+  *runOnce(filename: string): IterableIterator<void> {
     const record = this.#files.get(filename);
     if (record == null) {
       throw fileNotLoaded(filename);
@@ -131,10 +128,11 @@ export class Interpreter {
       // It's important to increment the program counter *before* evaluating
       // the statement in case it's a GOTO or similar.
       state.programCounter += 1;
-      // if (statement != null) {
+      if (statement == null) {
+        continue;
+      }
       //   console.log("evaluating", statement.label, statement.type);
-      // }
-      if (statement != null && !state.disabledLabels.has(statement.label)) {
+      if (!state.disabledLabels.has(statement.label)) {
         this.evaluateStatement(statement);
       }
       // Check if we reached the end of the file, which triggers
@@ -146,9 +144,7 @@ export class Interpreter {
     }
   }
 
-  runOnceSync(
-    filename: string,
-  ): void {
+  runOnceSync(filename: string): void {
     for (const _ of this.runOnce(filename)) {
       // consume line
     }
@@ -199,9 +195,7 @@ export class Interpreter {
 
   #statementState<
     S extends Extract<Statement, { type: StatementState["type"] }>,
-  >(
-    statement: S,
-  ): RefinedStatementState<S["type"]> {
+  >(statement: S): RefinedStatementState<S["type"]> {
     const { statementStates } = this.#currentFileState(statement);
     const { label } = statement;
 
@@ -250,9 +244,7 @@ export class Interpreter {
     }
   }
 
-  evaluateAssignment(
-    statement: RefinedStatement<"assignment">,
-  ): void {
+  evaluateAssignment(statement: RefinedStatement<"assignment">): void {
     const { lhs, rhs } = statement;
     const value = this.evaluateExpression(rhs, statement);
     const dest = parseReferenceIdentifier(lhs.identifier, statement);
@@ -298,10 +290,7 @@ export class Interpreter {
     const fileState = this.#currentFileState(statement);
     const callsiteLabel = fileState.gosubStack.pop();
     if (callsiteLabel == undefined) {
-      throw runtimeError(
-        "RETURN outside GOSUB",
-        statement,
-      );
+      throw runtimeError("RETURN outside GOSUB", statement);
     }
     fileState.programCounter = callsiteLabel + 1;
   }
@@ -359,7 +348,8 @@ export class Interpreter {
   evaluateENABLE(args: readonly Expression[], context: LineContext): void {
     for (const arg of args) {
       if (
-        arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)
+        arg.type !== "literal" ||
+        !LineLabelNumber.isValid(arg.token.number)
       ) {
         throw runtimeError(
           `ENABLE/ACT arg must be ${LineLabelNumber.description}`,
@@ -374,7 +364,8 @@ export class Interpreter {
   evaluateDISABLE(args: readonly Expression[], context: LineContext): void {
     for (const arg of args) {
       if (
-        arg.type !== "literal" || !LineLabelNumber.isValid(arg.token.number)
+        arg.type !== "literal" ||
+        !LineLabelNumber.isValid(arg.token.number)
       ) {
         throw runtimeError(
           `DISABLE/DEACT arg must be ${LineLabelNumber.description}`,
@@ -446,9 +437,10 @@ export class Interpreter {
   }
 
   getSecondsCounter(name: string, context: LineContext): number {
-    const assignmentTime = this.#currentFileState(context)
-      .secondsCounterAssignmentTimestamps.get(name) ??
-      this.clock.initialTimestamp();
+    const assignmentTime =
+      this.#currentFileState(context).secondsCounterAssignmentTimestamps.get(
+        name,
+      ) ?? this.clock.initialTimestamp();
     const assignedCount = this.#points.get(name) ?? 0;
     return Math.floor(
       this.clock.getTimestamp() - assignmentTime + assignedCount,
@@ -507,10 +499,7 @@ export class Interpreter {
     expression: RefinedExpression<"reference">,
     context: LineContext,
   ): number {
-    const id = parseReferenceIdentifier(
-      expression.identifier,
-      context,
-    );
+    const id = parseReferenceIdentifier(expression.identifier, context);
     switch (id.type) {
       case "local":
         return this.getLocal(id.keyOrName, context);
