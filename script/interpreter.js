@@ -98,38 +98,39 @@ class Interpreter {
         const [{ statements, maxLabel }, state] = record;
         __classPrivateFieldSet(this, _Interpreter_currentFilename, filename, "f");
         state.timestampAtStartOfLatestRun = this.clock.getTimestamp();
-        while (state.programCounter <= maxLabel && statements.size > 0) {
-            state.programCounter = Interpreter.findNextStatementLabel(state.programCounter, maxLabel, statements);
-            const statement = statements.get(state.programCounter);
+        if (maxLabel <= 0) {
+            return;
+        }
+        let previousStatement;
+        while (true) {
+            const nextCandidate = state.programCounter;
+            const statement = Interpreter.findNextStatement(nextCandidate, maxLabel, statements);
+            state.programCounter = statement.label;
+            // Check if we finished a pass of the file
+            if (previousStatement?.label === maxLabel) {
+                return;
+            }
+            else {
+                yield;
+            }
             // It's important to increment the program counter *before* evaluating
             // the statement in case it's a GOTO or similar.
-            state.programCounter += 1;
-            if (statement == null) {
-                continue;
-            }
+            state.programCounter = Interpreter.findNextStatement(statement.label + 1, maxLabel, statements).label;
             //   console.log("evaluating", statement.label, statement.type);
             if (!state.disabledLabels.has(statement.label)) {
                 this.evaluateStatement(statement);
             }
-            // Skip any following omitted labels to leave the program counter
-            // on an interesting label for debuggers.
-            state.programCounter = Interpreter.findNextStatementLabel(state.programCounter, maxLabel, statements);
-            // Check if we reached the end of the file, which triggers
-            // time increments and such.
-            if (statement?.label === maxLabel) {
-                break;
-            }
-            yield;
+            previousStatement = statement;
         }
     }
-    static findNextStatementLabel(firstCandidate, maxLabel, statements) {
+    static findNextStatement(firstCandidate, maxLabel, statements) {
         let statement;
         let label = firstCandidate;
         while (statement == null) {
             statement = statements.get(label);
             label = label >= maxLabel ? 1 : label + 1;
         }
-        return statement.label;
+        return statement;
     }
     runOnceSync(filename) {
         for (const _ of this.runOnce(filename)) {

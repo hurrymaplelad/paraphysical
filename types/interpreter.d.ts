@@ -41,7 +41,7 @@ export declare class Interpreter {
      * to the GOTO line if the file is run again.
      */
     runOnce(filename: string): IterableIterator<void>;
-    static findNextStatementLabel(firstCandidate: number, maxLabel: number, statements: Map<number, Statement>): number;
+    static findNextStatement(firstCandidate: number, maxLabel: number, statements: Map<number, Statement>): Statement;
     runOnceSync(filename: string): void;
     /**
      * The returned object is the live, mutable state used
