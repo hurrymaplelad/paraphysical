@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Stage Release: build the npm package from the current branch 
+#                and stage it to the `release` branch. 
+#                Does not commit.
+
+# exit when any command fails
+set -e
+# Best effort consistent working directory.
+# Don't run this from another repo!
+cd "$(git rev-parse --show-toplevel)"
+
+# Build npm package into ./npm/ using denoland/dnt
+deno run -A ./scripts/build.ts \
+    ${GITHUB_REF/refs\/tags\//} \ # Pass in tag name if available
+rm -r npm/node_modules || echo "ignoring"
+
+git branch -D temp || echo "ignoring"
+# Intentionally use checkout instead of switch to keep main branch files around
+git checkout --orphan temp
+# Unstage main branch files
+git reset
+# stage the files we want to keep
+git add -f npm 
+# delete everything else
+git clean -fd  
+# unstage the keepers
+git reset      
+# promote them out of the npm/ dir 
+mv npm/* .  
+rm -r npm
+# restage them at the root
+git add .
+git commit -am"temp add"
+# blow away the last release to remove files that aren't in the new build
+git fetch origin release
+git switch release
+git pull origin release
+git ls-files -z | xargs -0 rm -f
+git add .
+git commit -am"temp wipe"
+# rebase the clean commit onto this one
+git switch temp
+git rebase -Xtheirs release
+# git the rebased changed onto the release branch
+git switch release 
+git merge temp 
+# squash the temp commits into the staging area
+git reset --soft HEAD~2

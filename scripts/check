@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Check: runs lint, tests, and such.
+
+# Best effort consistent working directory.
+# Don't run this from another repo!
+cd "$(git rev-parse --show-toplevel)"
+# exit when any command fails
+set -e
+
+deno fmt --check
+deno test --allow-read
